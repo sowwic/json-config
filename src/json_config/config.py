@@ -1,107 +1,83 @@
 import dataclasses
-import json
 import logging
-import pathlib
-from typing import ClassVar, Self
+from typing import Any, Self
+
+from .config_manager import LayeredConfigManager
 
 LOGGER = logging.getLogger(__name__)
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super().__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-    @classmethod
-    def clear_instances(cls):
-        """Clear all instances of the class."""
-        cls._instances.clear()
-
-
 @dataclasses.dataclass
-class Config(metaclass=Singleton):
-    FILE_PATH: ClassVar[pathlib.Path]
+class ResolvedConfig:
+    """Typed wrapper over a LayeredConfigManager.
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        for name, value in cls.__dict__.items():
-            if isinstance(value, (list, dict, set)):
-                setattr(
-                    cls,
-                    name,
-                    dataclasses.field(default_factory=lambda v=value: type(v)(v)),
-                )
-        dataclasses.dataclass(cls)
+    Subclass with typed fields and defaults. On first run, if the root
+    layer has no file on disk yet, the defaults are written to it
+    automatically.
+
+    Example::
+
+        @dataclasses.dataclass
+        class AppConfig(ResolvedConfig):
+            theme: str = "light"
+            max_retries: int = 3
+            database: dict = dataclasses.field(default_factory=dict)
+
+        cfg = AppConfig.from_manager(manager)
+        print(cfg.theme)
+    """
 
     @classmethod
-    def get_fields_names(cls) -> set[str]:
-        """Get available config field names.
+    def get_field_names(cls) -> set[str]:
+        return {f.name for f in dataclasses.fields(cls)}
 
-        Returns:
-            set: set of existing field names
+    @classmethod
+    def _get_defaults(cls) -> dict[str, Any]:
+        """Return a dict of field names to their default values."""
+        defaults = {}
+        for field in dataclasses.fields(cls):
+            if field.default is not dataclasses.MISSING:
+                defaults[field.name] = field.default
+            elif field.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+                defaults[field.name] = field.default_factory()
+
+        return defaults
+
+    @classmethod
+    def _seed_root_layer(cls, manager: LayeredConfigManager) -> None:
+        """Seed the root layer with defaults and persist if its file is absent.
+
+        The root layer is the one with no dependencies (i.e. no depends_on).
+        If multiple roots exist, each one that has no file on disk is seeded.
         """
-        return set(each_field.name for each_field in dataclasses.fields(cls))
+        defaults = cls._get_defaults()
+        for name in manager.sorted_names():
+            layer = manager[name]
+            if layer.depends_on:
+                continue  # not a root
+            # Only set keys not already present in the layer.
+            missing = {k: v for k, v in defaults.items() if k not in layer._data}
+            if missing:
+                layer.set(**missing)
+            if layer.file_path and not layer.file_path.is_file():
+                layer.save()
+                LOGGER.info(f"First run: wrote defaults to '{layer.file_path}'")
 
     @classmethod
-    def _load_from_json(cls):
-        """Create Config instance from given json file.
+    def from_manager(
+        cls,
+        manager: LayeredConfigManager,
+        up_to: str | None = None,
+        *,
+        ignore_unknown: bool = True,
+    ) -> Self:
+        cls._seed_root_layer(manager)
+        data = manager.resolve(up_to)
+        field_names = cls.get_field_names()
+        if ignore_unknown:
+            for key in list(data.keys()):
+                if key not in field_names:
+                    LOGGER.warning(f"Ignoring unknown config key: '{key}'")
+                    data.pop(key)
 
-        Returns:
-            Config: new instance
-        """
-        json_data = json.loads(cls.FILE_PATH.read_text())
-        field_names = cls.get_fields_names()
-        for json_field_name in list(json_data.keys()):
-            if json_field_name not in field_names:
-                json_data.pop(json_field_name)
-                LOGGER.warning(f"Unused config field name: {json_field_name}")
-
-        LOGGER.info(f"Loaded config: {cls.FILE_PATH}")
-
-        return cls(**json_data)
-
-    @classmethod
-    def reset(cls) -> Self:
-        """Write default config values to file.
-
-        Returns:
-            Config: default config instance
-        """
-        cls.clear_instances()
-        instance = cls()
-        cls.FILE_PATH.parent.mkdir(exist_ok=True)
-        with cls.FILE_PATH.open("w") as config_file:
-            json.dump(dataclasses.asdict(instance), config_file, indent=4)
-
-        LOGGER.info("Config reset")
-
-        return instance
-
-    @classmethod
-    def load(cls) -> Self:
-        """Load config from FILE_PATH
-
-        Returns:
-            Config: new instance
-        """
-        if cls._instances:
-            return cls()
-
-        cls.FILE_PATH.parent.mkdir(exist_ok=True)
-        if not cls.FILE_PATH.is_file():
-            return cls.reset()
-
-        return cls._load_from_json()
-
-    @classmethod
-    def save(cls):
-        """Write config to json file."""
-        instance = cls()
-        cls.FILE_PATH.parent.mkdir(exist_ok=True)
-        with cls.FILE_PATH.open("w") as config_file:
-            json.dump(dataclasses.asdict(instance), config_file, indent=4)
-
-        LOGGER.info(f"Saved config: {cls.FILE_PATH}")
+        return cls(**data)

@@ -1,0 +1,10 @@
+{
+  "int_value": 5,
+  "str_value": "test",
+  "bool_value": true,
+  "float_value": 3.14,
+  "list_value": [1, 2, 3],
+  "dict_value": {
+    "key": "value"
+  }
+}
