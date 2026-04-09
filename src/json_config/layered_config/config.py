@@ -10,6 +10,11 @@ T = TypeVar("T", bound="ConfigValues")
 
 @dataclasses.dataclass
 class ConfigValues:
+    """Base class for config values.
+
+    Should be subclassed to define specific config fields.
+    """
+
     @classmethod
     def get_fields_names(cls) -> set[str]:
         """Get available config field names.
@@ -18,6 +23,22 @@ class ConfigValues:
             set: set of existing field names
         """
         return set(each_field.name for each_field in dataclasses.fields(cls))
+
+    @classmethod
+    def get_defaults(cls) -> dict[str, Any]:
+        """Return a dict of field names to their default values.
+
+        Returns:
+            dict[str, Any]: dictionary of field names to their default values
+        """
+        defaults = {}
+        for field in dataclasses.fields(cls):
+            if field.default is not dataclasses.MISSING:
+                defaults[field.name] = field.default
+            elif field.default_factory is not dataclasses.MISSING:
+                defaults[field.name] = field.default_factory()
+
+        return defaults
 
     def replace(self, data: dict[str, Any]) -> Self:
         """Update config values from a dictionary.
@@ -32,6 +53,23 @@ class ConfigValues:
 # TODO: Add writing of defaults to root layers if they don't exist
 # TODO: Add context manager for writing to a layer 'with layer_edit(layer_name) ...'
 class LayeredConfig[T]:
+    """Layered configuration class.
+
+    Provides a way to access and update config values from multiple layers.
+
+    Usage::
+        @dataclasses.dataclass
+        class ExampleValues(ConfigValues):
+            int_value: int = 0
+            str_value: str = ""
+            list_value: list[str] = dataclasses.field(
+                default_factory=list,
+            )
+
+        class ExampleConfig(LayeredConfig[ExampleValues]):
+            VALUES_CLASS = ExampleValues
+    """
+
     VALUES_CLASS: type[T] = ConfigValues
 
     def __init__(
@@ -104,6 +142,7 @@ class LayeredConfig[T]:
 
     def save(self):
         """Save the current values to the active layer."""
+        self.manager.seed_root_layers(self.values.get_defaults())
         layer_name = self.layer_filter if self.is_valid_filter else self.layers[0]
         self.write_to_layer(layer_name)
         self.manager.save(layer_name)
