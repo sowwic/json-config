@@ -10,6 +10,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class _ManagerMeta(type):
+    """Singleton metaclass for LayeredConfigManager."""
+
     _instance: LayeredConfigManager | None = None
 
     def __call__(cls, *args, **kwargs):
@@ -90,6 +92,12 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
         """
 
         def _walk(subtree: dict | set, parent_name: str | None) -> None:
+            """Recursively walk the tree and register layers.
+
+            Args:
+                subtree: The current subtree to walk.
+                parent_name: The name of the parent layer, or None for root layers.
+            """
             items = subtree if isinstance(subtree, dict) else {p: {} for p in subtree}
             for path_str, children in items.items():
                 path = pathlib.Path(path_str)
@@ -108,11 +116,35 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
         _walk(tree, parent_name=None)
 
     def unregister(self, name: str) -> None:
-        """Remove a layer (and any references to it are the caller's problem)."""
+        """Remove a layer (and any references to it are the caller's problem).
+
+        Args:
+            name: Name of the layer to remove.
+        """
         self._layers.pop(name, None)
 
     def __getitem__(self, name: str) -> ConfigLayer:
+        """Return a layer by name."""
         return self._layers[name]
+
+    def seed_root_layers(self, defaults: dict[str, Any]) -> None:
+        """Seed root layers with defaults and persist if file is absent.
+
+        Args:
+            defaults: Dictionary of field names to default values
+            to seed into root layers.
+        """
+        for name in self.sorted_names():
+            layer = self[name]
+            if layer.depends_on:
+                continue
+
+            missing = {k: v for k, v in defaults.items() if k not in layer._data}
+            if missing:
+                layer.set(**missing)
+            if layer.file_path and not layer.file_path.is_file():
+                layer.save()
+                LOGGER.info(f"Initialized default config: '{layer.file_path}'")
 
     # ------------------------------------------------------------------
     # Ordering
