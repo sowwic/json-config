@@ -2,8 +2,7 @@ import dataclasses
 import logging
 import typing
 
-if typing.TYPE_CHECKING:
-    from .config_manager import LayeredConfigManager
+from .config_manager import LayeredConfigManager
 
 LOGGER = logging.getLogger(__name__)
 T = typing.TypeVar("T", bound="ConfigValues")
@@ -74,9 +73,13 @@ class LayeredConfig[T]:
     VALUES_CLASS: type[T] = ConfigValues
 
     def __init__(
-        self, config_manager: LayeredConfigManager, layer_filter: str | None = None
+        self,
+        config_manager: LayeredConfigManager | None = None,
+        layer_filter: str | None = None,
     ):
-        self._config_manager: LayeredConfigManager = config_manager
+        self._config_manager: LayeredConfigManager = (
+            config_manager if config_manager else LayeredConfigManager()
+        )
         self._layer_filter: str | None = layer_filter
         self._values: T = self.VALUES_CLASS()
 
