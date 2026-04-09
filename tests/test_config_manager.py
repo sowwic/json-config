@@ -84,8 +84,37 @@ def test_load_branching_configs(preset_user_manager: LayeredConfigManager) -> No
     )
 
 
-def test_multiple_root_configs() -> None:
+def test_multiple_root_configs(
+    main_config_file: pathlib.Path,
+    workspace_config_file: pathlib.Path,
+) -> None:
     """Test resolving a config with multiple root layers."""
-    # TODO: Implement case where multiple root layers are present
-    # prevent resolving if up_to is not specified
-    pass
+    manager = LayeredConfigManager()
+    root_layer_1 = ConfigLayer("root_1", file_path=main_config_file)
+    root_layer_2 = ConfigLayer("root_2", file_path=workspace_config_file)
+    manager.register(root_layer_1)
+    manager.register(root_layer_2)
+    manager.load_all()
+    config = manager.resolve()
+    assert config == {
+        **root_layer_1.get_data(),
+        **root_layer_2.get_data(),
+    }
+
+
+def test_resolve_many(
+    main_config_file: pathlib.Path,
+    workspace_config_file: pathlib.Path,
+) -> None:
+    """Test resolving multiple independent branches and merging them in order."""
+    manager = LayeredConfigManager()
+    root_layer_1 = ConfigLayer("root_1", file_path=main_config_file)
+    root_layer_2 = ConfigLayer("root_2", file_path=workspace_config_file)
+    manager.register(root_layer_1)
+    manager.register(root_layer_2)
+    manager.load_all()
+    config = manager.resolve_many("root_2", "root_1")
+    assert config == {
+        **root_layer_2.get_data(),
+        **root_layer_1.get_data(),
+    }

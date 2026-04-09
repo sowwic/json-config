@@ -159,6 +159,30 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
             {},
         )
 
+    def resolve_many(self, *names: str) -> dict[str, Any]:
+        """Resolve multiple independent branches and merge them in order.
+
+        Each name is resolved against its own subgraph (i.e. including its
+        transitive dependencies), then the results are deep-merged left to
+        right — so later names take precedence over earlier ones on conflicts.
+
+        Args:
+            names: Layer names to resolve, in ascending priority order.
+
+        Example::
+
+            # default → user1
+            # default → user2
+            cfg = manager.resolve_many("user1", "user2")
+            # user2 wins over user1 on conflicting keys;
+            # both override default.
+        """
+        return functools.reduce(
+            deep_merge_dicts,
+            (self.resolve(name) for name in names),
+            {},
+        )
+
     # ------------------------------------------------------------------
     # Persistence helpers
     # ------------------------------------------------------------------
