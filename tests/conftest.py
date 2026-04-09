@@ -44,6 +44,32 @@ def output_dir() -> pathlib.Path:
     return out_dir
 
 
+@pytest.fixture(scope="session")
+def simple_config_output_dir() -> pathlib.Path:
+    """Output directory for tests.
+
+    Returns:
+        pathlib.Path: path to test output directory.
+
+    """
+    out_dir = pathlib.Path.cwd() / ".test_output" / "simple_config"
+    out_dir.mkdir(exist_ok=True, parents=True)
+    return out_dir
+
+
+@pytest.fixture(scope="session")
+def layered_config_output_dir() -> pathlib.Path:
+    """Output directory for tests.
+
+    Returns:
+        pathlib.Path: path to test output directory.
+
+    """
+    out_dir = pathlib.Path.cwd() / ".test_output" / "layered_config"
+    out_dir.mkdir(exist_ok=True, parents=True)
+    return out_dir
+
+
 @pytest.fixture()
 def preset_app_manager() -> LayeredConfigManager:
     manager = LayeredConfigManager()

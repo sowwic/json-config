@@ -3,17 +3,17 @@ import pathlib
 from json_config.api import SimpleConfig
 
 
-def test_init_empty_config(output_dir: pathlib.Path):
+def test_init_empty_config(simple_config_output_dir: pathlib.Path):
     class TestConfig(SimpleConfig):
-        FILE_PATH = output_dir / "test_init_empty_config.json"
+        FILE_PATH = simple_config_output_dir / "test_init_empty_config.json"
 
     TestConfig.load()
     assert TestConfig.FILE_PATH.is_file()
 
 
-def test_init_config_with_multiple_variables(output_dir: pathlib.Path):
+def test_init_config_with_multiple_variables(simple_config_output_dir: pathlib.Path):
     class TestConfig(SimpleConfig):
-        FILE_PATH = output_dir / "test_init_mutiple_values_config.json"
+        FILE_PATH = simple_config_output_dir / "test_init_mutiple_values_config.json"
 
         int_value: int = 5
         str_value: str = "test_value"
@@ -32,9 +32,9 @@ def test_init_config_with_multiple_variables(output_dir: pathlib.Path):
     assert instance.dict_value == {"a": [2, 3, 5]}
 
 
-def test_config_reset(output_dir: pathlib.Path):
+def test_config_reset(simple_config_output_dir: pathlib.Path):
     class TestConfig(SimpleConfig):
-        FILE_PATH = output_dir / "test_reset_config.json"
+        FILE_PATH = simple_config_output_dir / "test_reset_config.json"
 
         int_value: int = 5
 
@@ -48,9 +48,9 @@ def test_config_reset(output_dir: pathlib.Path):
     assert instance.int_value == 5
 
 
-def test_config_get_fields_names(output_dir: pathlib.Path):
+def test_config_get_fields_names(simple_config_output_dir: pathlib.Path):
     class TestConfig(SimpleConfig):
-        FILE_PATH = output_dir / "test_get_field_names_config.json"
+        FILE_PATH = simple_config_output_dir / "test_get_field_names_config.json"
 
         int_value: int = 5
         str_value: str = "test_value"
