@@ -12,6 +12,8 @@ class ConfigValues:
     pass
 
 
+# TODO: Add writing of defaults to root layers if they don't exist
+# TODO: Add context manager for writing to a layer 'with layer_edit(layer_name) ...'
 class LayeredConfig:
     VALUES_CLASS = ConfigValues
 
