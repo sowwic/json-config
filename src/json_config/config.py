@@ -29,26 +29,39 @@ class ResolvedConfig:
 
     @classmethod
     def get_field_names(cls) -> set[str]:
+        """Return a set of field names for this config class.
+
+        Returns:
+            A set of field names.
+        """
         return {f.name for f in dataclasses.fields(cls)}
 
     @classmethod
     def _get_defaults(cls) -> dict[str, Any]:
-        """Return a dict of field names to their default values."""
+        """Return a dict of field names to their default values.
+
+        Returns:
+            A dict of field names to their default values.
+        """
         defaults = {}
         for field in dataclasses.fields(cls):
             if field.default is not dataclasses.MISSING:
                 defaults[field.name] = field.default
-            elif field.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+            elif field.default_factory is not dataclasses.MISSING:
                 defaults[field.name] = field.default_factory()
 
         return defaults
 
     @classmethod
     def _seed_root_layer(cls, manager: LayeredConfigManager) -> None:
-        """Seed the root layer with defaults and persist if its file is absent.
+        """
+        Seed the root layer with defaults and persist if its file is absent.
 
         The root layer is the one with no dependencies (i.e. no depends_on).
         If multiple roots exist, each one that has no file on disk is seeded.
+
+        Args:
+            manager: The manager to seed from.
         """
         defaults = cls._get_defaults()
         for name in manager.sorted_names():
@@ -71,6 +84,15 @@ class ResolvedConfig:
         *,
         ignore_unknown: bool = True,
     ) -> Self:
+        """Create a config instance from a LayeredConfigManager.
+
+        Args:
+            manager: The manager to resolve config from.
+            up_to: Resolve only up to (and including) this layer.
+            ignore_unknown: If True, ignore unknown config keys.
+        Returns:
+            The resolved config instance.
+        """
         cls._seed_root_layer(manager)
         data = manager.resolve(up_to)
         field_names = cls.get_field_names()
