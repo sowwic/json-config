@@ -59,7 +59,9 @@ class ConfigLayer:
         raw = json.loads(self.file_path.read_text())
 
         if not isinstance(raw, dict):
-            raise ValueError(f"[{self.name}] Expected a JSON object in {self.file_path}")
+            raise ValueError(
+                f"[{self.name}] Expected a JSON object in {self.file_path}"
+            )
         self._data = raw
         LOGGER.info(f"[{self.name}] Loaded from {self.file_path}")
 
@@ -67,6 +69,10 @@ class ConfigLayer:
         """Persist this layer's own values to *file_path*."""
         if self.file_path is None:
             raise RuntimeError(f"Layer '{self.name}' has no file_path set.")
+
+        if not self.get_data():
+            LOGGER.debug(f"[{self.name}] No data to save, skipping.")
+            return
 
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         with self.file_path.open("w") as fh:
