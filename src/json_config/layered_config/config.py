@@ -2,104 +2,85 @@ import dataclasses
 import logging
 from typing import Any, Self
 
-from .config_manager import LayeredConfigManager
+from .config_manager import ConfigLayer, LayeredConfigManager
 
 LOGGER = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class ResolvedConfig:
-    """Typed wrapper over a LayeredConfigManager.
+class ConfigValues:
+    pass
 
-    Subclass with typed fields and defaults. On first run, if the root
-    layer has no file on disk yet, the defaults are written to it
-    automatically.
 
-    Example::
+class LayeredConfig:
+    VALUES_CLASS = ConfigValues
 
-        @dataclasses.dataclass
-        class AppConfig(ResolvedConfig):
-            theme: str = "light"
-            max_retries: int = 3
-            database: dict = dataclasses.field(default_factory=dict)
+    def __init__(
+        self, config_manager: LayeredConfigManager, layer_filter: str | None = None
+    ):
+        self._config_manager: LayeredConfigManager = config_manager
+        self._layer_filter: str | None = layer_filter
+        self._values: ConfigValues = self.VALUES_CLASS()
 
-        cfg = AppConfig.from_manager(manager)
-        print(cfg.theme)
-    """
+    @property
+    def is_valid_filter(self) -> bool:
+        return self._layer_filter in self.layers
 
-    @classmethod
-    def get_field_names(cls) -> set[str]:
-        """Return a set of field names for this config class.
+    @property
+    def manager(self) -> LayeredConfigManager:
+        return self._config_manager
 
-        Returns:
-            A set of field names.
-        """
-        return {f.name for f in dataclasses.fields(cls)}
+    @property
+    def layers(self) -> list[str]:
+        return list(self._config_manager.sorted_names)
 
-    @classmethod
-    def _get_defaults(cls) -> dict[str, Any]:
-        """Return a dict of field names to their default values.
+    @property
+    def layer_filter(self) -> str:
+        return self._layer_filter
 
-        Returns:
-            A dict of field names to their default values.
-        """
-        defaults = {}
-        for field in dataclasses.fields(cls):
-            if field.default is not dataclasses.MISSING:
-                defaults[field.name] = field.default
-            elif field.default_factory is not dataclasses.MISSING:
-                defaults[field.name] = field.default_factory()
+    @layer_filter.setter
+    def layer_filter(self, layer_name: str | None):
+        self._layer_filter = layer_name
 
-        return defaults
+    @property
+    def values(self) -> ConfigValues:
+        return self._values
 
-    @classmethod
-    def _seed_root_layer(cls, manager: LayeredConfigManager) -> None:
-        """
-        Seed the root layer with defaults and persist if its file is absent.
+    def resolve(self):
+        self.manager.load_all()
+        sorted_layer_names = self.manager.sorted_names()
+        layer_name = sorted_layer_names[0]
+        if self.layer_filter in self.layers:
+            layer_name = self.layer_filter
+        elif self.layer_filter is not None:
+            raise ValueError(
+                f"Invalid layer filter: {self.layer_filter}, "
+                f"valid options are: {self.layers}"
+            )
 
-        The root layer is the one with no dependencies (i.e. no depends_on).
-        If multiple roots exist, each one that has no file on disk is seeded.
+        resolved_dict = self.manager.resolve(up_to=layer_name)
+        self._values = dataclasses.replace(self.VALUES_CLASS(), **resolved_dict)
 
-        Args:
-            manager: The manager to seed from.
-        """
-        defaults = cls._get_defaults()
-        for name in manager.sorted_names():
-            layer = manager[name]
-            if layer.depends_on:
-                continue  # not a root
-            # Only set keys not already present in the layer.
-            missing = {k: v for k, v in defaults.items() if k not in layer._data}
-            if missing:
-                layer.set(**missing)
-            if layer.file_path and not layer.file_path.is_file():
-                layer.save()
-                LOGGER.info(f"First run: wrote defaults to '{layer.file_path}'")
+    def defaults(self) -> ConfigValues:
+        """Return the default values for this config."""
+        return self.VALUES_CLASS()
 
-    @classmethod
-    def from_manager(
-        cls,
-        manager: LayeredConfigManager,
-        up_to: str | None = None,
-        *,
-        ignore_unknown: bool = True,
-    ) -> Self:
-        """Create a config instance from a LayeredConfigManager.
+    def write_to_layer(self, layer_name: str):
+        """Write the current values to the specified layer."""
+        layer = self.manager[layer_name]
+        update_dict = {
+            k: v
+            for k, v in dataclasses.asdict(self._values).items()
+            if k in layer.get_data()
+        }
+        layer.set(**update_dict)
 
-        Args:
-            manager: The manager to resolve config from.
-            up_to: Resolve only up to (and including) this layer.
-            ignore_unknown: If True, ignore unknown config keys.
-        Returns:
-            The resolved config instance.
-        """
-        cls._seed_root_layer(manager)
-        data = manager.resolve(up_to)
-        field_names = cls.get_field_names()
-        if ignore_unknown:
-            for key in list(data.keys()):
-                if key not in field_names:
-                    LOGGER.warning(f"Ignoring unknown config key: '{key}'")
-                    data.pop(key)
+    def reset(self):
+        """Reset the current values to the defaults."""
+        self._values = self.VALUES_CLASS()
 
-        return cls(**data)
+    def save(self):
+        """Save the current values to the active layer."""
+        layer_name = self.layer_filter if self.is_valid_filter else self.layers[0]
+        self.write_to_layer(layer_name)
+        self.manager.save(layer_name)
