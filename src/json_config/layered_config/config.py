@@ -1,28 +1,45 @@
 import dataclasses
 import logging
-from typing import Any, Self
+from typing import Any, Self, TypeVar
 
-from .config_manager import ConfigLayer, LayeredConfigManager
+from .config_manager import LayeredConfigManager
 
 LOGGER = logging.getLogger(__name__)
+T = TypeVar("T", bound="ConfigValues")
 
 
 @dataclasses.dataclass
 class ConfigValues:
-    pass
+    @classmethod
+    def get_fields_names(cls) -> set[str]:
+        """Get available config field names.
+
+        Returns:
+            set: set of existing field names
+        """
+        return set(each_field.name for each_field in dataclasses.fields(cls))
+
+    def replace(self, data: dict[str, Any]) -> Self:
+        """Update config values from a dictionary.
+
+        Args:
+            data (dict[str, Any]): dictionary of values to update
+        """
+        filtered_dict = {k: v for k, v in data.items() if k in self.get_fields_names()}
+        return dataclasses.replace(self, **filtered_dict)
 
 
 # TODO: Add writing of defaults to root layers if they don't exist
 # TODO: Add context manager for writing to a layer 'with layer_edit(layer_name) ...'
-class LayeredConfig:
-    VALUES_CLASS = ConfigValues
+class LayeredConfig[T]:
+    VALUES_CLASS: type[T] = ConfigValues
 
     def __init__(
         self, config_manager: LayeredConfigManager, layer_filter: str | None = None
     ):
         self._config_manager: LayeredConfigManager = config_manager
         self._layer_filter: str | None = layer_filter
-        self._values: ConfigValues = self.VALUES_CLASS()
+        self._values: T = self.VALUES_CLASS()
 
     @property
     def is_valid_filter(self) -> bool:
@@ -34,7 +51,7 @@ class LayeredConfig:
 
     @property
     def layers(self) -> list[str]:
-        return list(self._config_manager.sorted_names)
+        return list(self._config_manager.sorted_names())
 
     @property
     def layer_filter(self) -> str:
@@ -45,8 +62,12 @@ class LayeredConfig:
         self._layer_filter = layer_name
 
     @property
-    def values(self) -> ConfigValues:
+    def values(self) -> T:
         return self._values
+
+    @property
+    def available_keys(self) -> set[str]:
+        return self.VALUES_CLASS.get_fields_names()
 
     def resolve(self):
         self.manager.load_all()
@@ -61,7 +82,7 @@ class LayeredConfig:
             )
 
         resolved_dict = self.manager.resolve(up_to=layer_name)
-        self._values = dataclasses.replace(self.VALUES_CLASS(), **resolved_dict)
+        self._values = self.values.replace(resolved_dict)
 
     def defaults(self) -> ConfigValues:
         """Return the default values for this config."""
