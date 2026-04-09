@@ -1,11 +1,12 @@
 import dataclasses
 import logging
-from typing import Any, Self, TypeVar
+import typing
 
-from .config_manager import LayeredConfigManager
+if typing.TYPE_CHECKING:
+    from .config_manager import LayeredConfigManager
 
 LOGGER = logging.getLogger(__name__)
-T = TypeVar("T", bound="ConfigValues")
+T = typing.TypeVar("T", bound="ConfigValues")
 
 
 @dataclasses.dataclass
@@ -25,7 +26,7 @@ class ConfigValues:
         return set(each_field.name for each_field in dataclasses.fields(cls))
 
     @classmethod
-    def get_defaults(cls) -> dict[str, Any]:
+    def get_defaults(cls) -> dict[str, typing.Any]:
         """Return a dict of field names to their default values.
 
         Returns:
@@ -40,7 +41,7 @@ class ConfigValues:
 
         return defaults
 
-    def replace(self, data: dict[str, Any]) -> Self:
+    def replace(self, data: dict[str, typing.Any]) -> typing.Self:
         """Update config values from a dictionary.
 
         Args:
