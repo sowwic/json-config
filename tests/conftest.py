@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from json_config.api import ConfigLayer, LayeredConfigManager
+from json_config.api import ConfigLayer, LayeredConfigManager, SimpleConfig
 
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
@@ -23,6 +23,12 @@ USER2_FIXTURE = FIXTURE_USER_LAYERS_DIR / "user2.json"
 def fresh_manager() -> None:
     yield
     LayeredConfigManager.clear()
+
+
+@pytest.fixture(autouse=True)
+def fresh_simple_config() -> None:
+    yield
+    SimpleConfig.clear_instances()
 
 
 @pytest.fixture(scope="session")
