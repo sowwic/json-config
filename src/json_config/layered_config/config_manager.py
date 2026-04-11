@@ -150,6 +150,15 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
     # Ordering
     # ------------------------------------------------------------------
 
+    @property
+    def root_layers(self) -> list[str]:
+        """Return the root layers as a dict.
+
+        Returns:
+            list[str]: The root layer names.
+        """
+        return [k for k, v in self._layers.items() if not v.depends_on]
+
     def sorted_names(self, up_to: str | None = None) -> list[str]:
         """Return layer names in topological order.
 

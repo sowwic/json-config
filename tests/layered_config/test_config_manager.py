@@ -118,3 +118,16 @@ def test_resolve_many(
         **root_layer_2.get_data(),
         **root_layer_1.get_data(),
     }
+
+
+def test_root_layers(output_dir: pathlib.Path):
+    manager = LayeredConfigManager()
+    for i in range(1, 4):
+        root_layer = ConfigLayer(f"root{i}")
+        manager.register(root_layer)
+
+    child_layer = ConfigLayer("child", depends_on=["root1"])
+    manager.register(child_layer)
+
+    assert len(manager.root_layers) == 3
+    assert manager.root_layers == ["root1", "root2", "root3"]
