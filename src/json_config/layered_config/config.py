@@ -83,18 +83,64 @@ class LayeredConfig[T]:
 
     @property
     def is_valid_filter(self) -> bool:
+        """Return whether the layer filter is valid.
+
+        Returns:
+            bool: True if the layer filter is valid, False otherwise.
+        """
         return self._layer_filter in self.layers
 
     @property
     def manager(self) -> LayeredConfigManager:
+        """
+        Return the config manager.
+
+        Raises:
+            ValueError: If the config manager is not set.
+
+        Returns:
+            LayeredConfigManager: The config manager.
+        """
+        if not self._config_manager:
+            raise ValueError("Config manager is not set")
         return self._config_manager
 
     @property
+    def root_layers(self) -> dict[str, Any]:
+        """Return the root layers as a dict.
+
+        Returns:
+            dict[str, Any]: The root layers.
+        """
+        return self._config_manager.root_layers
+
+    @property
+    def current_layer(self) -> str:
+        """Return the current layer filter.
+
+        Returns:
+            str: The current layer filter, or the first layer if not set.
+        """
+        return self._layer_filter if self.is_valid_filter else self.root_layers[0]
+
+    @property
     def layers(self) -> list[str]:
+        """Return the list of layer names in topological order.
+
+        Returns:
+            list[str]: The list of layer names.
+        """
+
         return list(self._config_manager.sorted_names())
 
     @property
-    def layer_filter(self) -> str:
+    def layer_filter(self) -> str | None:
+        """Return the current layer filter.
+
+        Returns
+        -------
+        str | None: The current layer filter, or None if not set.
+        """
         return self._layer_filter
 
     @layer_filter.setter
@@ -103,13 +149,11 @@ class LayeredConfig[T]:
 
     @property
     def values(self) -> T:
+        """Return the current values object."""
         return self._values
 
-    @property
-    def available_keys(self) -> set[str]:
-        return self.VALUES_CLASS.get_fields_names()
-
     def resolve(self):
+        """Resolve the current values from the config manager."""
         self.manager.load_all()
         sorted_layer_names = self.manager.sorted_names()
         layer_name = sorted_layer_names[0]
@@ -145,6 +189,6 @@ class LayeredConfig[T]:
     def save(self):
         """Save the current values to the active layer."""
         self.manager.seed_root_layers(self.values.get_defaults())
-        layer_name = self.layer_filter if self.is_valid_filter else self.layers[0]
-        self.write_to_layer(layer_name)
-        self.manager.save(layer_name)
+        current_layer = self.current_layer
+        self.write_to_layer(current_layer)
+        self.manager.save(current_layer)
