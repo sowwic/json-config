@@ -46,9 +46,6 @@ lint.select = [
     "UP",
 ]
 lint.ignore = [
-    "D100",
-    "D104",
-    "D103",
 ]
 
 [tool.pytest.ini_options]
