@@ -106,7 +106,7 @@ class LayeredConfig[T]:
         return self._config_manager
 
     @property
-    def root_layers(self) -> dict[str, Any]:
+    def root_layers(self) -> list[str]:
         """Return the root layers as a dict.
 
         Returns:
