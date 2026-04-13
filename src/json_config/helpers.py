@@ -2,7 +2,7 @@ import typing
 from graphlib import TopologicalSorter
 
 if typing.TYPE_CHECKING:
-    from .config_layer import ConfigLayer
+    from .layered_config.config_layer import ConfigLayer
 
 
 def deep_merge_dicts(base: dict, override: dict) -> dict:
