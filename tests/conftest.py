@@ -7,13 +7,14 @@ from json_config.api import ConfigLayer, LayeredConfigManager, SimpleConfig
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
 
-FIXTURE_LAYERS_DIR = FIXTURES_DIR / "app_layers"
+CONFIG_TESTING_FIXTURES_DIR = FIXTURES_DIR / "config_testing"
+FIXTURE_LAYERS_DIR = CONFIG_TESTING_FIXTURES_DIR / "app_layers"
 MAIN_CONFIG_FIXTURE = FIXTURE_LAYERS_DIR / "main.json"
 WORKSPACE_CONFIG_FIXTURE = FIXTURE_LAYERS_DIR / "workspace.json"
 USER_CONFIG_FIXTURE = FIXTURE_LAYERS_DIR / "user.json"
-SIMPLE_CONFIG_FIXTURE = FIXTURES_DIR / "simple_config.json"
+SIMPLE_CONFIG_FIXTURE = CONFIG_TESTING_FIXTURES_DIR / "simple_config.json"
 
-FIXTURE_USER_LAYERS_DIR = FIXTURES_DIR / "user_layers"
+FIXTURE_USER_LAYERS_DIR = CONFIG_TESTING_FIXTURES_DIR / "user_layers"
 USER_DEFAULT_FIXTURE = FIXTURE_USER_LAYERS_DIR / "default.json"
 USER1_FIXTURE = FIXTURE_USER_LAYERS_DIR / "user1.json"
 USER2_FIXTURE = FIXTURE_USER_LAYERS_DIR / "user2.json"
@@ -110,7 +111,7 @@ def simple_config_file() -> pathlib.Path:
         pathlib.Path: path to test output directory.
 
     """
-    return pathlib.Path.cwd() / "tests/fixtures/simple_config.json"
+    return SIMPLE_CONFIG_FIXTURE
 
 
 @pytest.fixture(scope="session")
