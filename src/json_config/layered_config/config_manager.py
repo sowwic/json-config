@@ -53,6 +53,10 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
     def __init__(self) -> None:
         self._layers: dict[str, ConfigLayer] = {}
 
+    def __repr__(self) -> str:
+        layers = self.sorted_names()
+        return f"LayeredConfigManager(layers={layers})"
+
     def register(self, layer: ConfigLayer) -> None:
         """Add a layer to the manager."""
         if layer.name in self._layers:
@@ -212,11 +216,11 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
 
         Example::
 
-            # default → user1
-            # default → user2
-            cfg = manager.resolve_many("user1", "user2")
-            # user2 wins over user1 on conflicting keys;
-            # both override default.
+            # root → layer1
+            # rooot → layer2
+            cfg = manager.resolve_many("layer1", "layer2")
+            # layer2 wins over layer1 on conflicting keys;
+            # both override root.
         """
         return functools.reduce(
             deep_merge_dicts,
@@ -251,7 +255,3 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
     def clear(cls) -> None:
         """Destroy the singleton (useful in tests)."""
         cls.clear_instance()  # type: ignore[attr-defined]
-
-    def __repr__(self) -> str:
-        order = self.sorted_names()
-        return f"LayeredConfigManager(layers={order})"
