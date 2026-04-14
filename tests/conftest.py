@@ -7,6 +7,7 @@ from json_config.api import ConfigLayer, LayeredConfigManager, SimpleConfig
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
 
+# Config testing fixtures
 CONFIG_TESTING_FIXTURES_DIR = FIXTURES_DIR / "config_testing"
 FIXTURE_LAYERS_DIR = CONFIG_TESTING_FIXTURES_DIR / "app_layers"
 MAIN_CONFIG_FIXTURE = FIXTURE_LAYERS_DIR / "main.json"
@@ -18,6 +19,11 @@ FIXTURE_USER_LAYERS_DIR = CONFIG_TESTING_FIXTURES_DIR / "user_layers"
 USER_DEFAULT_FIXTURE = FIXTURE_USER_LAYERS_DIR / "default.json"
 USER1_FIXTURE = FIXTURE_USER_LAYERS_DIR / "user1.json"
 USER2_FIXTURE = FIXTURE_USER_LAYERS_DIR / "user2.json"
+
+# Layer file fixtures
+LAYER_TESTING_FIXTURES_DIR = FIXTURES_DIR / "layer_testing"
+EMPTY_LAYER_FILE = LAYER_TESTING_FIXTURES_DIR / "empty_layer.json"
+INVALID_NOT_DICT_LAYER = LAYER_TESTING_FIXTURES_DIR / "invalid_not_dict_layer.json"
 
 
 @pytest.fixture(autouse=True)
@@ -67,6 +73,30 @@ def layered_config_output_dir() -> pathlib.Path:
 
     """
     out_dir = pathlib.Path.cwd() / ".test_output" / "layered_config"
+    out_dir.mkdir(exist_ok=True, parents=True)
+    return out_dir
+
+
+@pytest.fixture(scope="session")
+def manager_output_dir() -> pathlib.Path:
+    """Output directory for tests.
+
+    Returns:
+        pathlib.Path: path to test output directory.
+    """
+    out_dir = pathlib.Path.cwd() / ".test_output" / "manager"
+    out_dir.mkdir(exist_ok=True, parents=True)
+    return out_dir
+
+
+@pytest.fixture(scope="session")
+def config_layer_output_dir() -> pathlib.Path:
+    """Output directory for tests.
+
+    Returns:
+        pathlib.Path: path to test output directory.
+    """
+    out_dir = pathlib.Path.cwd() / ".test_output" / "config_layer"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
@@ -145,3 +175,25 @@ def user_config_file() -> pathlib.Path:
 
     """
     return USER_CONFIG_FIXTURE
+
+
+@pytest.fixture(scope="session")
+def empty_layer_file() -> pathlib.Path:
+    """Path to an empty layer file for testing.
+
+    Returns:
+        pathlib.Path: path to test output directory.
+
+    """
+    return EMPTY_LAYER_FILE
+
+
+@pytest.fixture(scope="session")
+def invalid_not_dict_layer() -> pathlib.Path:
+    """Path to an invalid layer file that is not a dict for testing.
+
+    Returns:
+        pathlib.Path: path to test output directory.
+
+    """
+    return INVALID_NOT_DICT_LAYER
