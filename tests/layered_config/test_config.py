@@ -92,3 +92,77 @@ def test_defaults_writing(
     # The extra layer file should not be created as it's empty
     assert extra_child_layer.get_data() == {}
     assert not extra_child_layer.file_path.is_file()
+
+
+def test_layer_filter_limits_resolve_to_expected_values(
+    preset_app_manager: LayeredConfigManager,
+):
+    """Test that layer filtering limits resolve to the expected values."""
+
+    class TestConfig(LayeredConfig):
+        pass
+
+    config = TestConfig(preset_app_manager)
+
+    config.layer_filter = "main"
+    resolved_dict = config.resolve()
+    assert preset_app_manager["main"].get_data().items() <= resolved_dict.items()
+    # Set filter to "workspace" and verify only workspace layer is included
+    config.layer_filter = "workspace"
+    resolved_dict = config.resolve()
+    assert preset_app_manager["workspace"].get_data().items() <= resolved_dict.items()
+    # Set filter to "user" and verify only user layer is included
+    config.layer_filter = "user"
+    resolved_dict = config.resolve()
+    assert (
+        not preset_app_manager["workspace"].get_data().items() <= resolved_dict.items()
+    )
+    assert preset_app_manager["user"].get_data().items() <= resolved_dict.items()
+    # Set filter to None and verify only root layers are included
+    config.layer_filter = None
+    resolved_dict = config.resolve()
+    assert preset_app_manager["main"].get_data().items() <= resolved_dict.items()
+
+
+def test_invalid_layer_filter_resolve(
+    preset_app_manager: LayeredConfigManager,
+):
+    """Test that resolving with an invalid layer filter raises a ValueError."""
+
+    class TestConfig(LayeredConfig):
+        pass
+
+    config = TestConfig(preset_app_manager)
+
+    config.layer_filter = "nonexistent"
+    with pytest.raises(ValueError):
+        config.resolve()
+
+
+def test_default_values():
+    """Test that the default values are returned correctly."""
+
+    class TestValues(ConfigValues):
+        name: str = "default"
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    config = TestConfig()
+    assert config.defaults() == TestValues()
+
+
+def test_reset_values():
+    """Test that resetting values to defaults works correctly."""
+
+    class TestValues(ConfigValues):
+        name: str = "default"
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    config = TestConfig()
+    config.values.name = "new_value"
+    assert config.values.name != config.defaults().name
+    config.reset()
+    assert config.defaults().name == TestValues().name
