@@ -1,5 +1,7 @@
 import pathlib
 
+import pytest
+
 from json_config.api import ConfigLayer, LayeredConfigManager
 
 
@@ -55,6 +57,15 @@ def test_init_from_path_tree(
     assert (
         manager["workspace"].get_data()["str_value"] == manager.resolve()["str_value"]
     )
+
+
+def test_load_layer_missing_dependancy_value_error():
+    """Test that loading a layer with a missing dependancy raises a ValueError."""
+    manager = LayeredConfigManager()
+    test_layer = ConfigLayer("test", depends_on=["missing"])
+    manager.register(test_layer)
+    with pytest.raises(ValueError):
+        manager.load_all()
 
 
 def test_loading_to_layer(preset_app_manager: LayeredConfigManager) -> None:
