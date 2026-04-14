@@ -101,8 +101,6 @@ class LayeredConfig[T]:
         Returns:
             LayeredConfigManager: The config manager.
         """
-        if not self._config_manager:
-            raise ValueError("Config manager is not set")
         return self._config_manager
 
     @property
@@ -152,7 +150,7 @@ class LayeredConfig[T]:
         """Return the current values object."""
         return self._values
 
-    def resolve(self):
+    def resolve(self) -> dict[str, typing.Any]:
         """Resolve the current values from the config manager."""
         self.manager.load_all()
         sorted_layer_names = self.manager.sorted_names()
@@ -167,6 +165,8 @@ class LayeredConfig[T]:
 
         resolved_dict = self.manager.resolve(up_to=layer_name)
         self._values = self.values.replace(resolved_dict)
+
+        return resolved_dict
 
     def defaults(self) -> ConfigValues:
         """Return the default values for this config."""
