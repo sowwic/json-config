@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 class _ManagerMeta(type):
     """Singleton metaclass for LayeredConfigManager."""
 
-    _instance: LayeredConfigManager | None = None
+    _instance: "LayeredConfigManager | None" = None
 
     def __call__(cls, *args, **kwargs):
         if cls._instance is None:
