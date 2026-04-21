@@ -75,6 +75,14 @@ class LayeredConfig[T]:
         config_manager: LayeredConfigManager | None = None,
         layer_filter: str | None = None,
     ):
+        """Initialize the config.
+
+        Args:
+            config_manager (LayeredConfigManager | None, optional): The config manager
+                to use, by default None (a new manager is created).
+            layer_filter (str | None, optional): The layer filter to use,
+                by default None (the root layer is used).
+        """
         self._config_manager: LayeredConfigManager = (
             config_manager if config_manager else LayeredConfigManager()
         )
@@ -138,9 +146,8 @@ class LayeredConfig[T]:
     def layer_filter(self) -> str | None:
         """Return the current layer filter.
 
-        Returns
-        -------
-        str | None: The current layer filter, or None if not set.
+        Returns:
+            str | None: The current layer filter, or None if not set.
         """
         return self._layer_filter
 
@@ -150,11 +157,20 @@ class LayeredConfig[T]:
 
     @property
     def values(self) -> T:
-        """Return the current values object."""
+        """Return the current values object.
+
+        Returns
+        -------
+        T: The current values object.
+        """
         return self._values
 
     def resolve(self) -> dict[str, typing.Any]:
-        """Resolve the current values from the config manager."""
+        """Resolve the current values from the config manager.
+
+        Returns:
+            dict[str, typing.Any]: The resolved values.
+        """
         self.manager.load_all()
         sorted_layer_names = self.manager.sorted_names()
         layer_name = sorted_layer_names[0]
@@ -172,11 +188,23 @@ class LayeredConfig[T]:
         return resolved_dict
 
     def defaults(self) -> ConfigValues:
-        """Return the default values for this config."""
+        """Return the default values for this config.
+
+        Returns:
+            ConfigValues: The default values.
+        """
+
         return self.VALUES_CLASS()
 
     def write_to_layer(self, layer_name: str):
-        """Write the current values to the specified layer."""
+        """Write the current values to the specified layer.
+
+        Parameters
+        ----------
+        layer_name : str
+            The name of the layer to write to.
+        """
+
         layer = self.manager[layer_name]
         update_dict = {
             k: v
