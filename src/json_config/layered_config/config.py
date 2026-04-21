@@ -81,6 +81,9 @@ class LayeredConfig[T]:
         self._layer_filter: str | None = layer_filter
         self._values: T = self.VALUES_CLASS()
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(layer_filter={self._layer_filter})"
+
     @property
     def is_valid_filter(self) -> bool:
         """Return whether the layer filter is valid.

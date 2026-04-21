@@ -55,7 +55,7 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
 
     def __repr__(self) -> str:
         layers = self.sorted_names()
-        return f"LayeredConfigManager(layers={layers})"
+        return f"{self.__class__.__name__}(layers={layers})"
 
     def register(self, layer: ConfigLayer) -> None:
         """Add a layer to the manager."""

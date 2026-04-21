@@ -24,9 +24,8 @@ class ConfigLayer:
     file_path: pathlib.Path | None = None
     _data: dict[str, Any] = dataclasses.field(default_factory=dict, repr=False)
 
-    # ------------------------------------------------------------------
-    # Public data access
-    # ------------------------------------------------------------------
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(name={self.name})"
 
     def set(self, **kwargs: Any) -> None:
         """Update this layer's values."""
@@ -35,10 +34,6 @@ class ConfigLayer:
     def get_data(self) -> dict[str, Any]:
         """Return a shallow copy of this layer's raw data."""
         return dict(self._data)
-
-    # ------------------------------------------------------------------
-    # Persistence
-    # ------------------------------------------------------------------
 
     def load(self) -> None:
         """Load values from *file_path* (if it exists)."""
