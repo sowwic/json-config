@@ -22,7 +22,7 @@ class Singleton(type):
 
 
 @dataclasses.dataclass
-class Config(metaclass=Singleton):
+class SimpleConfig(metaclass=Singleton):
     FILE_PATH: ClassVar[pathlib.Path]
 
     def __init_subclass__(cls, **kwargs):
