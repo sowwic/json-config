@@ -11,6 +11,12 @@ from json_config.api import (
 )
 
 
+def test_repr() -> None:
+    """Test the __repr__ method."""
+    config = LayeredConfig()
+    assert repr(config) == "LayeredConfig(layer_filter=None)"
+
+
 def test_init_with_single_layer(
     simple_config_file: pathlib.Path,
     layered_config_output_dir: pathlib.Path,

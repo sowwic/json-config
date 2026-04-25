@@ -5,6 +5,12 @@ import pytest
 from json_config.api import ConfigLayer
 
 
+def test_repr() -> None:
+    """Test the __repr__ method."""
+    layer = ConfigLayer("test", file_path=None)
+    assert repr(layer) == "ConfigLayer(name=test)"
+
+
 def test_empty_layer():
     """Test that an empty layer has no data."""
     layer = ConfigLayer("test", file_path=None)
