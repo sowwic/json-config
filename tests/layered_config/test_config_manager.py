@@ -5,6 +5,14 @@ import pytest
 from json_config.api import ConfigLayer, LayeredConfigManager
 
 
+def test_repr(preset_app_manager: LayeredConfigManager) -> None:
+    """Test the __repr__ method."""
+    assert (
+        repr(preset_app_manager)
+        == f"LayeredConfigManager(layers={preset_app_manager.sorted_names()})"
+    )
+
+
 def test_init_with_single_layer(simple_config_file: pathlib.Path) -> None:
     """Test initializing with a single layer and resolving values."""
     manager = LayeredConfigManager()
@@ -12,6 +20,26 @@ def test_init_with_single_layer(simple_config_file: pathlib.Path) -> None:
     manager.register(layer)
     manager.load_all()
     assert layer.get_data() == manager.resolve()
+
+
+def test_resiter_layer_with_same_name_raises_error() -> None:
+    """Test registering a layer with the same name raises a ValueError."""
+    manager = LayeredConfigManager()
+    layer1 = ConfigLayer("main")
+    layer2 = ConfigLayer("main")
+    manager.register(layer1)
+    with pytest.raises(ValueError):
+        manager.register(layer2)
+
+
+def test_unregister_layer() -> None:
+    """Test unregistering a layer."""
+    manager = LayeredConfigManager()
+    layer = ConfigLayer("test")
+    manager.register(layer)
+    assert "test" in manager._layers
+    manager.unregister("test")
+    assert "test" not in manager._layers
 
 
 def test_init_with_multiple_layers(
