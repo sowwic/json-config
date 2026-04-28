@@ -1,6 +1,6 @@
 json-config
-=========================
+===========
 
-v0.0.1
--------
-* <Change description goes here>.
+v1.0.0
+------
+* Initial release
