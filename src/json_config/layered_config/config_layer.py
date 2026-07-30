@@ -54,9 +54,7 @@ class ConfigLayer:
         raw = json.loads(self.file_path.read_text())
 
         if not isinstance(raw, dict):
-            raise ValueError(
-                f"[{self.name}] Expected a JSON object in {self.file_path}"
-            )
+            raise ValueError(f"[{self.name}] Expected a JSON object in {self.file_path}")
         self._data = raw
         LOGGER.info(f"[{self.name}] Loaded from {self.file_path}")
 
