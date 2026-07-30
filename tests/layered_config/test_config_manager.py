@@ -82,9 +82,7 @@ def test_init_from_path_tree(
     assert manager["main"].get_data() != manager.resolve()
     assert manager["user"].get_data()["int_value"] == manager.resolve()["int_value"]
     assert manager["user"].get_data()["dict_value"] == manager.resolve()["dict_value"]
-    assert (
-        manager["workspace"].get_data()["str_value"] == manager.resolve()["str_value"]
-    )
+    assert manager["workspace"].get_data()["str_value"] == manager.resolve()["str_value"]
 
 
 def test_load_layer_missing_dependancy_value_error():

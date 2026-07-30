@@ -93,9 +93,7 @@ def test_defaults_writing(
     # After saving files for root layers should contain the defaults
     manager.load_all()
     assert (
-        root_layer.get_data()
-        == extra_root_layer.get_data()
-        == TestValues.get_defaults()
+        root_layer.get_data() == extra_root_layer.get_data() == TestValues.get_defaults()
     )
     # The extra layer file should not be created as it's empty
     assert extra_child_layer.get_data() == {}
