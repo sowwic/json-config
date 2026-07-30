@@ -1,8 +1,9 @@
+import dataclasses
 import pathlib
 
 import pytest
 
-from json_config.api import ConfigLayer, LayeredConfigManager, SimpleConfig
+from json_config.api import ConfigLayer, ConfigValues, LayeredConfigManager, SimpleConfig
 
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
@@ -24,6 +25,77 @@ USER2_FIXTURE = FIXTURE_USER_LAYERS_DIR / "user2.json"
 LAYER_TESTING_FIXTURES_DIR = FIXTURES_DIR / "layer_testing"
 EMPTY_LAYER_FILE = LAYER_TESTING_FIXTURES_DIR / "empty_layer.json"
 INVALID_NOT_DICT_LAYER = LAYER_TESTING_FIXTURES_DIR / "invalid_not_dict_layer.json"
+
+
+# ---------------------------------------------------------------------------
+# ConfigValues category-nesting fixtures
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class _CategoryAValues(ConfigValues):
+    field_one: int = 100
+    field_two: int = 100
+
+
+@dataclasses.dataclass
+class _CategoryBValues(ConfigValues):
+    label: str = "test"
+
+
+@dataclasses.dataclass
+class _CategoryValues(ConfigValues):
+    """ConfigValues with a single level of category nesting.
+
+    Structure::
+
+        category_a (category) -> field_one, field_two
+        category_b (category) -> label
+        flat_value            -> flat field
+    """
+
+    category_a: _CategoryAValues = dataclasses.field(
+        default_factory=_CategoryAValues, metadata={"category": "category_a"}
+    )
+    category_b: _CategoryBValues = dataclasses.field(
+        default_factory=_CategoryBValues, metadata={"category": "category_b"}
+    )
+    flat_value: int = 10
+
+
+@dataclasses.dataclass
+class _SubCategoryValues(ConfigValues):
+    x: int = 0
+    y: int = 0
+
+
+@dataclasses.dataclass
+class _NestedCategoryAValues(ConfigValues):
+    field_one: int = 100
+    field_two: int = 100
+    sub_category: _SubCategoryValues = dataclasses.field(
+        default_factory=_SubCategoryValues, metadata={"category": "sub_category"}
+    )
+
+
+@dataclasses.dataclass
+class _NestedCategoryValues(ConfigValues):
+    """ConfigValues with three levels of category nesting.
+
+    Structure::
+
+        category_a (category) -> field_one, field_two, sub_category (category) -> x, y
+        category_b (category) -> label
+        flat_value            -> flat field
+    """
+
+    category_a: _NestedCategoryAValues = dataclasses.field(
+        default_factory=_NestedCategoryAValues, metadata={"category": "category_a"}
+    )
+    category_b: _CategoryBValues = dataclasses.field(
+        default_factory=_CategoryBValues, metadata={"category": "category_b"}
+    )
+    flat_value: int = 10
 
 
 @pytest.fixture(autouse=True)
@@ -131,6 +203,28 @@ def preset_user_manager() -> LayeredConfigManager:
     manager.register(user2_layer)
     yield manager
     LayeredConfigManager.clear()
+
+
+@pytest.fixture()
+def category_values_class() -> type[_CategoryValues]:
+    """ConfigValues class with a single level of category nesting.
+
+    Returns:
+        type[_CategoryValues]: The ConfigValues subclass
+            (category_a/category_b/flat_value).
+    """
+    return _CategoryValues
+
+
+@pytest.fixture()
+def nested_category_values_class() -> type[_NestedCategoryValues]:
+    """ConfigValues class with three levels of category nesting.
+
+    Returns:
+        type[_NestedCategoryValues]: The ConfigValues subclass with a nested
+            category_a.sub_category category.
+    """
+    return _NestedCategoryValues
 
 
 @pytest.fixture(scope="session")
