@@ -1,5 +1,6 @@
 import dataclasses
 import pathlib
+import shutil
 
 import pytest
 
@@ -7,6 +8,7 @@ from json_config.api import ConfigLayer, ConfigValues, LayeredConfigManager, Sim
 
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
+TEST_OUTPUT_DIR = pathlib.Path.cwd() / ".test_output"
 
 # Config testing fixtures
 CONFIG_TESTING_FIXTURES_DIR = FIXTURES_DIR / "config_testing"
@@ -98,6 +100,18 @@ class _NestedCategoryValues(ConfigValues):
     flat_value: int = 10
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _clean_test_output_dir() -> None:
+    """Remove any leftover .test_output directory at the start of the session.
+
+    The various *_output_dir fixtures below only ever `mkdir(exist_ok=True)`
+    and never clean up after themselves, so stale files from a previous run
+    (e.g. written under an old field/category name) could otherwise bleed
+    into a fresh run's assertions.
+    """
+    shutil.rmtree(TEST_OUTPUT_DIR, ignore_errors=True)
+
+
 @pytest.fixture(autouse=True)
 def fresh_manager() -> None:
     yield
@@ -118,9 +132,8 @@ def output_dir() -> pathlib.Path:
         pathlib.Path: path to test output directory.
 
     """
-    out_dir = pathlib.Path.cwd() / ".test_output"
-    out_dir.mkdir(exist_ok=True)
-    return out_dir
+    TEST_OUTPUT_DIR.mkdir(exist_ok=True)
+    return TEST_OUTPUT_DIR
 
 
 @pytest.fixture(scope="session")
@@ -131,7 +144,7 @@ def simple_config_output_dir() -> pathlib.Path:
         pathlib.Path: path to test output directory.
 
     """
-    out_dir = pathlib.Path.cwd() / ".test_output" / "simple_config"
+    out_dir = TEST_OUTPUT_DIR / "simple_config"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
@@ -144,7 +157,7 @@ def layered_config_output_dir() -> pathlib.Path:
         pathlib.Path: path to test output directory.
 
     """
-    out_dir = pathlib.Path.cwd() / ".test_output" / "layered_config"
+    out_dir = TEST_OUTPUT_DIR / "layered_config"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
@@ -156,7 +169,7 @@ def manager_output_dir() -> pathlib.Path:
     Returns:
         pathlib.Path: path to test output directory.
     """
-    out_dir = pathlib.Path.cwd() / ".test_output" / "manager"
+    out_dir = TEST_OUTPUT_DIR / "manager"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
@@ -168,7 +181,7 @@ def config_layer_output_dir() -> pathlib.Path:
     Returns:
         pathlib.Path: path to test output directory.
     """
-    out_dir = pathlib.Path.cwd() / ".test_output" / "config_layer"
+    out_dir = TEST_OUTPUT_DIR / "config_layer"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
