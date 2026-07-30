@@ -1,4 +1,5 @@
 import dataclasses
+import json
 import pathlib
 
 import pytest
@@ -59,6 +60,7 @@ def test_defaults_writing(
         list_value: list[str] = dataclasses.field(
             default_factory=lambda: ["a", "b", "c"]
         )
+        dataclasses.field()
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
@@ -172,3 +174,166 @@ def test_reset_values():
     assert config.values.name != config.defaults().name
     config.reset()
     assert config.defaults().name == TestValues().name
+
+
+# ---------------------------------------------------------------------------
+# LayeredConfig + category metadata integration
+# ---------------------------------------------------------------------------
+
+
+def test_layered_config_save_produces_expected_nested_json(
+    category_values_class: type[ConfigValues],
+    layered_config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Test that saving a ConfigValues with category fields produces the
+    expected nested JSON structure through a single ConfigLayer/file."""
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+    )
+    manager.register(root_layer)
+    manager.load_all()
+
+    config = TestConfig(manager)
+    config.save()
+
+    on_disk = json.loads(root_layer.file_path.read_text())
+    assert on_disk == {
+        "category_a": {"field_one": 100, "field_two": 100},
+        "category_b": {"label": "test"},
+        "flat_value": 10,
+    }
+
+
+def test_layered_config_roundtrip_mutating_nested_category_value(
+    category_values_class: type[ConfigValues],
+    layered_config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Test load -> resolve -> mutate a nested category value -> save round-trips."""
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+    )
+    manager.register(root_layer)
+    manager.load_all()
+
+    config = TestConfig(manager)
+    config.save()
+
+    manager.load_all()
+    config2 = TestConfig(manager)
+    config2.resolve()
+    config2.values.category_a.field_one = 1920
+    config2.save()
+
+    on_disk = json.loads(root_layer.file_path.read_text())
+    assert on_disk == {
+        "category_a": {"field_one": 1920, "field_two": 100},
+        "category_b": {"label": "test"},
+        "flat_value": 10,
+    }
+
+
+def test_layered_config_deep_merges_nested_category_across_layers(
+    category_values_class: type[ConfigValues],
+    layered_config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Test that a child layer overriding only part of a category is deep-merged
+    with the root layer's defaults for that same category."""
+    root_layer = ConfigLayer(
+        "root",
+        file_path=layered_config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=layered_config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    config = TestConfig(manager)
+    #! Seed root defaults without resolving, matching test_defaults_writing.
+    config.save()
+
+    # Child layer only overrides one field of category_a; the sibling field
+    # should still come from the root layer's seeded defaults after a deep merge.
+    child_layer.set(category_a={"field_one": 4000})
+    manager.save("child")
+
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+
+    assert config2.values.category_a.field_one == 4000
+    assert config2.values.category_a.field_two == 100
+    assert config2.values.category_b.label == "test"
+    assert config2.values.flat_value == 10
+
+
+def test_layered_config_roundtrip_with_three_levels_of_nesting(
+    nested_category_values_class: type[ConfigValues],
+    layered_config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Regression test: save/load/mutate/save round-trips correctly through
+    three levels of category nesting (category_a.sub_category.x/y)."""
+
+    class TestConfig(LayeredConfig[nested_category_values_class]):
+        VALUES_CLASS = nested_category_values_class
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+    )
+    manager.register(root_layer)
+    manager.load_all()
+
+    config = TestConfig(manager)
+    config.save()
+
+    on_disk = json.loads(root_layer.file_path.read_text())
+    assert on_disk == {
+        "category_a": {
+            "field_one": 100,
+            "field_two": 100,
+            "sub_category": {"x": 0, "y": 0},
+        },
+        "category_b": {"label": "test"},
+        "flat_value": 10,
+    }
+
+    # Mutate only the deepest (level-3) values and re-save.
+    manager.load_all()
+    config2 = TestConfig(manager)
+    config2.resolve()
+    config2.values.category_a.sub_category.x = 42
+    config2.values.category_a.sub_category.y = 84
+    config2.save()
+
+    on_disk = json.loads(root_layer.file_path.read_text())
+    assert on_disk == {
+        "category_a": {
+            "field_one": 100,
+            "field_two": 100,
+            "sub_category": {"x": 42, "y": 84},
+        },
+        "category_b": {"label": "test"},
+        "flat_value": 10,
+    }
