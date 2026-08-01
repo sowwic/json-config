@@ -15,10 +15,19 @@ class Singleton(type):
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
-    @classmethod
     def clear_instances(cls):
-        """Clear all instances of the class."""
-        cls._instances.clear()
+        """Clear the cached singleton instance of this class.
+
+        Note:
+            This is a plain metaclass method (not a ``@classmethod``) so that
+            ``cls`` binds to the concrete class it was called on (e.g.
+            ``MyConfig``) rather than to the ``Singleton`` metaclass itself.
+            Using ``@classmethod`` here would make ``cls`` resolve to
+            ``Singleton`` for every subclass, causing ``cls._instances.clear()``
+            to wipe out the cached instances of *every* ``SimpleConfig``
+            subclass instead of just this one.
+        """
+        cls._instances.pop(cls, None)
 
 
 @dataclasses.dataclass
@@ -72,7 +81,7 @@ class SimpleConfig(metaclass=Singleton):
         """
         cls.clear_instances()
         instance = cls()
-        cls.FILE_PATH.parent.mkdir(exist_ok=True)
+        cls.FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
         with cls.FILE_PATH.open("w") as config_file:
             json.dump(dataclasses.asdict(instance), config_file, indent=4)
 
@@ -87,10 +96,10 @@ class SimpleConfig(metaclass=Singleton):
         Returns:
             Config: new instance
         """
-        if cls._instances:
+        if cls in cls._instances:
             return cls()
 
-        cls.FILE_PATH.parent.mkdir(exist_ok=True)
+        cls.FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
         if not cls.FILE_PATH.is_file():
             return cls.reset()
 
@@ -100,7 +109,7 @@ class SimpleConfig(metaclass=Singleton):
     def save(cls):
         """Write config to json file."""
         instance = cls()
-        cls.FILE_PATH.parent.mkdir(exist_ok=True)
+        cls.FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
         with cls.FILE_PATH.open("w") as config_file:
             json.dump(dataclasses.asdict(instance), config_file, indent=4)
 

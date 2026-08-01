@@ -176,7 +176,12 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
         return topological_sort_layers(self._layers)
 
     def _reachable_subgraph(self, name: str) -> dict[str, ConfigLayer]:
-        """Return the layers reachable from *name* (including itself)."""
+        """Return the layers reachable from *name* (including itself).
+
+        Raises:
+            ValueError: if *name* or any of its transitive dependencies is
+                not registered with this manager.
+        """
         seen: set[str] = set()
         stack = [name]
         while stack:
@@ -184,7 +189,10 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
             if current in seen:
                 continue
             seen.add(current)
-            stack.extend(self._layers[current].depends_on)
+            layer = self._layers.get(current)
+            if layer is None:
+                raise ValueError(f"Layer '{current}' is not registered.")
+            stack.extend(layer.depends_on)
         return {k: self._layers[k] for k in seen}
 
     # ------------------------------------------------------------------
