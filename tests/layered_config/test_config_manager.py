@@ -168,3 +168,19 @@ def test_root_layers(output_dir: pathlib.Path):
 
     assert len(manager.root_layers) == 3
     assert manager.root_layers == ["root1", "root2", "root3"]
+
+
+def test_resolve_up_to_missing_dependency_raises_value_error() -> None:
+    """Regression test: resolving/sorting "up to" a layer with a missing
+    dependency must raise a ValueError, consistent with the no-`up_to` path
+    (sorted_names()/load_all()), instead of a bare KeyError.
+    """
+    manager = LayeredConfigManager()
+    test_layer = ConfigLayer("test", depends_on=["missing"])
+    manager.register(test_layer)
+
+    with pytest.raises(ValueError):
+        manager.sorted_names(up_to="test")
+
+    with pytest.raises(ValueError):
+        manager.resolve(up_to="test")
