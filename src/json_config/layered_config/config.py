@@ -295,6 +295,15 @@ class LayeredConfig[T]:
     def write_to_layer(self, layer_name: str):
         """Write the current values to the specified layer.
 
+        Only the (top-level) fields whose current value differs from what
+        would be resolved from *layer_name*'s own dependencies (i.e. without
+        this layer's own contribution) are written. This keeps a layer's
+        file limited to its own overrides rather than a full copy of
+        inherited values, while still allowing the very first write to a
+        brand new, previously-empty layer to persist correctly (previously,
+        writes were filtered down to keys already present in the layer's
+        data, which meant nothing could ever be written to a fresh layer).
+
         Parameters
         ----------
         layer_name : str
@@ -302,8 +311,11 @@ class LayeredConfig[T]:
         """
 
         layer = self.manager[layer_name]
+        baseline = self.manager.resolve_many(*layer.depends_on)
+        _unset = object()
+        current_dict = self._values.to_dict()
         update_dict = {
-            k: v for k, v in self._values.to_dict().items() if k in layer.get_data()
+            k: v for k, v in current_dict.items() if baseline.get(k, _unset) != v
         }
         layer.set(**update_dict)
 

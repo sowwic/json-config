@@ -335,3 +335,53 @@ def test_layered_config_roundtrip_with_three_levels_of_nesting(
         "category_b": {"label": "test"},
         "flat_value": 10,
     }
+
+
+def test_save_to_fresh_child_layer_persists_changed_values(
+    layered_config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Regression test: saving with a layer filter pointing at a child layer
+    that has never been written to before must actually persist the current
+    values.
+
+    Previously, ``write_to_layer`` only wrote keys that already existed in
+    the target layer's own data, which meant nothing could ever be written
+    to a brand new, previously-empty layer.
+    """
+
+    @dataclasses.dataclass
+    class TestValues(ConfigValues):
+        theme: str = "light"
+        font_size: int = 12
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root", file_path=layered_config_output_dir / f"{request.node.name}_root.json"
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=layered_config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    config = TestConfig(manager, layer_filter="child")
+    config.resolve()
+    config.values.theme = "dark"
+    config.save()
+
+    # The change was persisted...
+    assert child_layer.get_data() == {"theme": "dark"}
+    assert child_layer.file_path.is_file()
+    # ...but the unchanged sibling field is not duplicated into the child
+    # layer -- it should stay a sparse override file.
+    assert "font_size" not in child_layer.get_data()
+
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert on_disk == {"theme": "dark"}
