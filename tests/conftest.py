@@ -4,7 +4,7 @@ import shutil
 
 import pytest
 
-from json_config.api import ConfigLayer, ConfigValues, LayeredConfigManager, SimpleConfig
+from json_config.api import ConfigLayer, ConfigValues, LayeredConfigManager
 
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
@@ -116,12 +116,6 @@ def _clean_test_output_dir() -> None:
 def fresh_manager() -> None:
     yield
     LayeredConfigManager.clear()
-
-
-@pytest.fixture(autouse=True)
-def fresh_simple_config() -> None:
-    yield
-    SimpleConfig.clear_instances()
 
 
 @pytest.fixture(scope="session")

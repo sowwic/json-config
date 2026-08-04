@@ -3,7 +3,7 @@ import logging
 import pathlib
 from typing import Any
 
-from ..helpers import deep_merge_dicts, topological_sort_layers
+from ..utils import layer_helpers
 from .config_layer import ConfigLayer
 
 LOGGER = logging.getLogger(__name__)
@@ -172,8 +172,8 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
         """
         if up_to is not None:
             subset = self._reachable_subgraph(up_to)
-            return topological_sort_layers(subset)
-        return topological_sort_layers(self._layers)
+            return layer_helpers.topological_sort_layers(subset)
+        return layer_helpers.topological_sort_layers(self._layers)
 
     def _reachable_subgraph(self, name: str) -> dict[str, ConfigLayer]:
         """Return the layers reachable from *name* (including itself).
@@ -207,7 +207,7 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
                    Useful to preview what a specific layer contributes.
         """
         return functools.reduce(
-            deep_merge_dicts,
+            layer_helpers.deep_merge_dicts,
             (self._layers[name].get_data() for name in self.sorted_names(up_to)),
             {},
         )
@@ -231,7 +231,7 @@ class LayeredConfigManager(metaclass=_ManagerMeta):
             # both override root.
         """
         return functools.reduce(
-            deep_merge_dicts,
+            layer_helpers.deep_merge_dicts,
             (self.resolve(name) for name in names),
             {},
         )
