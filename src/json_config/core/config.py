@@ -2,6 +2,7 @@ import dataclasses
 import logging
 import typing
 
+from ..utils import layer_helpers
 from .config_manager import LayeredConfigManager
 
 LOGGER = logging.getLogger(__name__)
@@ -315,29 +316,81 @@ class LayeredConfig[T]:
     def write_to_layer(self, layer_name: str):
         """Write the current values to the specified layer.
 
-        Only the (top-level) fields whose current value differs from what
-        would be resolved from *layer_name*'s own dependencies (i.e. without
-        this layer's own contribution) are written. This keeps a layer's
-        file limited to its own overrides rather than a full copy of
-        inherited values, while still allowing the very first write to a
-        brand new, previously-empty layer to persist correctly (previously,
-        writes were filtered down to keys already present in the layer's
-        data, which meant nothing could ever be written to a fresh layer).
+        Only the fields whose current value differs from what would be
+        resolved from *layer_name*'s own dependencies (i.e. without this
+        layer's own contribution) are written. This keeps a layer's file
+        limited to its own overrides rather than a full copy of inherited
+        values, while still allowing the very first write to a brand new,
+        previously-empty layer to persist correctly (previously, writes
+        were filtered down to keys already present in the layer's data,
+        which meant nothing could ever be written to a fresh layer).
 
-        Parameters
-        ----------
-        layer_name : str
-            The name of the layer to write to.
+        The diff is computed recursively, so nested category values are
+        pruned on a per-field basis: if only part of a nested category still
+        diverges from the baseline, only that part is kept as an override,
+        and fields that now match the baseline (at any depth) are dropped.
+
+        Args:
+            layer_name : str
+                The name of the layer to write to.
         """
 
         layer = self.manager[layer_name]
         baseline = self.manager.resolve_many(*layer.depends_on)
-        _unset = object()
         current_dict = self._values.to_dict()
-        update_dict = {
-            k: v for k, v in current_dict.items() if baseline.get(k, _unset) != v
-        }
-        layer.set(**update_dict)
+        diff = layer_helpers.deep_diff_dicts(current_dict, baseline)
+        layer.replace_data(diff)
+
+    def revert_value(self, field_or_path: dataclasses.Field | str) -> None:
+        """Revert a field's value to what is inherited from the current
+        layer's dependencies, discarding any override for it on that layer.
+
+        This immediately removes the field's own override from the current
+        layer's raw data, and updates :attr:`values` to reflect the value
+        that would be resolved without that layer's own contribution
+        (falling back to the field's default if no dependency provides a
+        value for it either). Call :meth:`save` afterwards to persist the
+        change to disk.
+
+        Args:
+            field_or_path: Either a ``dataclasses.Field`` belonging to this
+                config's ``VALUES_CLASS`` (reverts that whole top-level
+                field -- for a category field, this discards *all* of its
+                nested overrides), or a dot-separated path string
+                addressing a single, possibly nested, leaf field by its
+                category/attribute keys, e.g. ``"category_a.field_one"``.
+                A nested path only discards the override for that one leaf
+                field, leaving sibling overrides within the same category
+                untouched -- e.g.::
+
+                    config.revert_value("subcategory.option1")
+
+        Raises:
+            ValueError: If *field_or_path* is a ``dataclasses.Field`` that
+                does not belong to this config's ``VALUES_CLASS``.
+        """
+        if isinstance(field_or_path, str):
+            path: tuple[str, ...] = tuple(field_or_path.split("."))
+        else:
+            field = field_or_path
+            if field.name not in self.VALUES_CLASS.get_fields_names():
+                raise ValueError(
+                    f"Field '{field.name}' is not a field of "
+                    f"{self.VALUES_CLASS.__name__}"
+                )
+            path = (self.VALUES_CLASS._field_key(field),)
+
+        layer = self.manager[self.current_layer]
+        layer.unset_path(path)
+
+        baseline = self.manager.resolve_many(*layer.depends_on)
+        defaults = self.VALUES_CLASS.get_defaults()
+        _unset = object()
+        value = layer_helpers.get_nested(baseline, path, _unset)
+        if value is _unset:
+            value = layer_helpers.get_nested(defaults, path, _unset)
+        if value is not _unset:
+            self._values = self._values.replace(layer_helpers.nest_value(path, value))
 
     def reset(self):
         """Reset the current values to the defaults."""

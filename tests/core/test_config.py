@@ -20,7 +20,7 @@ def test_repr() -> None:
 
 def test_init_with_single_layer(
     simple_config_file: pathlib.Path,
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     @dataclasses.dataclass
@@ -42,13 +42,13 @@ def test_init_with_single_layer(
 
     config.values.int_value = 10
     config.manager["root"].file_path = (
-        layered_config_output_dir / f"{request.node.name}_config.json"
+        config_output_dir / f"{request.node.name}_config.json"
     )
     config.save()
 
 
 def test_defaults_writing(
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     """Test that defaults are written to the root layer file when saving."""
@@ -68,16 +68,16 @@ def test_defaults_writing(
     # Setup manager
     manager = LayeredConfigManager()
     root_layer = ConfigLayer(
-        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+        "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
     extra_root_layer = ConfigLayer(
         "extra_root",
-        file_path=layered_config_output_dir
+        file_path=config_output_dir
         / f"{request.node.name}_extra_root_config.json",
     )
     extra_child_layer = ConfigLayer(
         "extra",
-        file_path=layered_config_output_dir / f"{request.node.name}_extra_config.json",
+        file_path=config_output_dir / f"{request.node.name}_extra_config.json",
         depends_on=["root"],
     )
     manager.register(root_layer)
@@ -181,7 +181,7 @@ def test_reset_values():
 
 def test_layered_config_save_produces_expected_nested_json(
     category_values_class: type[ConfigValues],
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     """Test that saving a ConfigValues with category fields produces the
@@ -192,7 +192,7 @@ def test_layered_config_save_produces_expected_nested_json(
 
     manager = LayeredConfigManager()
     root_layer = ConfigLayer(
-        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+        "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
     manager.register(root_layer)
     manager.load_all()
@@ -210,7 +210,7 @@ def test_layered_config_save_produces_expected_nested_json(
 
 def test_layered_config_roundtrip_mutating_nested_category_value(
     category_values_class: type[ConfigValues],
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     """Test load -> resolve -> mutate a nested category value -> save round-trips."""
@@ -220,7 +220,7 @@ def test_layered_config_roundtrip_mutating_nested_category_value(
 
     manager = LayeredConfigManager()
     root_layer = ConfigLayer(
-        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+        "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
     manager.register(root_layer)
     manager.load_all()
@@ -244,18 +244,18 @@ def test_layered_config_roundtrip_mutating_nested_category_value(
 
 def test_layered_config_deep_merges_nested_category_across_layers(
     category_values_class: type[ConfigValues],
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     """Test that a child layer overriding only part of a category is deep-merged
     with the root layer's defaults for that same category."""
     root_layer = ConfigLayer(
         "root",
-        file_path=layered_config_output_dir / f"{request.node.name}_root.json",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
     )
     child_layer = ConfigLayer(
         "child",
-        file_path=layered_config_output_dir / f"{request.node.name}_child.json",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
     manager = LayeredConfigManager()
@@ -287,7 +287,7 @@ def test_layered_config_deep_merges_nested_category_across_layers(
 
 def test_layered_config_roundtrip_with_three_levels_of_nesting(
     nested_category_values_class: type[ConfigValues],
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     """Regression test: save/load/mutate/save round-trips correctly through
@@ -298,7 +298,7 @@ def test_layered_config_roundtrip_with_three_levels_of_nesting(
 
     manager = LayeredConfigManager()
     root_layer = ConfigLayer(
-        "root", file_path=layered_config_output_dir / f"{request.node.name}_config.json"
+        "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
     manager.register(root_layer)
     manager.load_all()
@@ -338,7 +338,7 @@ def test_layered_config_roundtrip_with_three_levels_of_nesting(
 
 
 def test_save_to_fresh_child_layer_persists_changed_values(
-    layered_config_output_dir: pathlib.Path,
+    config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
     """Regression test: saving with a layer filter pointing at a child layer
@@ -360,11 +360,11 @@ def test_save_to_fresh_child_layer_persists_changed_values(
 
     manager = LayeredConfigManager()
     root_layer = ConfigLayer(
-        "root", file_path=layered_config_output_dir / f"{request.node.name}_root.json"
+        "root", file_path=config_output_dir / f"{request.node.name}_root.json"
     )
     child_layer = ConfigLayer(
         "child",
-        file_path=layered_config_output_dir / f"{request.node.name}_child.json",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
     manager.register(root_layer)
@@ -385,3 +385,534 @@ def test_save_to_fresh_child_layer_persists_changed_values(
 
     on_disk = json.loads(child_layer.file_path.read_text())
     assert on_disk == {"theme": "dark"}
+
+
+def test_save_removes_override_that_now_matches_parent_layer(
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Regression test: if a value in a child layer is set back to the same
+    value as its parent layer, the override must be removed from the child
+    layer entirely (rather than remaining as a stale, redundant override).
+    """
+
+    @dataclasses.dataclass
+    class TestValues(ConfigValues):
+        option1: int = 0
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    # Seed root with option1=1, and child with an override of option1=2.
+    root_layer.set(option1=1)
+    root_layer.save()
+    child_layer.set(option1=2)
+    child_layer.save()
+
+    manager.load_all()
+    config = TestConfig(manager, layer_filter="child")
+    config.resolve()
+    assert config.values.option1 == 2
+
+    # Set the child's value back to the same value as the parent layer.
+    config.values.option1 = 1
+    config.save()
+
+    # The override must be gone entirely from the child layer...
+    assert "option1" not in child_layer.get_data()
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert on_disk == {}
+
+    # ...and the resolved value should still be correct (inherited from root).
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    assert config2.values.option1 == 1
+
+
+def test_save_removes_nested_category_override_that_now_matches_parent(
+    category_values_class: type[ConfigValues],
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Regression test: the same override-pruning behavior must apply to
+    nested category values, not just flat top-level fields.
+
+    If a nested category value in a child layer is set back so the whole
+    category matches what the parent layer would already provide, the
+    entire category key must be removed from the child layer.
+    """
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    # Seed root defaults: category_a.field_one=100, field_two=100.
+    config = TestConfig(manager)
+    config.save()
+
+    # Override category_a in the child layer.
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    config2.values.category_a.field_one = 4000
+    config2.save()
+
+    assert child_layer.get_data() == {"category_a": {"field_one": 4000}}
+
+    # Now set the whole category back to match the parent's values exactly.
+    manager.load_all()
+    config3 = TestConfig(manager, layer_filter="child")
+    config3.resolve()
+    assert config3.values.category_a.field_one == 4000
+    config3.values.category_a.field_one = 100
+    config3.save()
+
+    # The entire category override must be gone from the child layer...
+    assert "category_a" not in child_layer.get_data()
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert "category_a" not in on_disk
+
+    # ...and the resolved value should still be correct (inherited from root).
+    manager.load_all()
+    config4 = TestConfig(manager, layer_filter="child")
+    config4.resolve()
+    assert config4.values.category_a.field_one == 100
+    assert config4.values.category_a.field_two == 100
+
+
+def test_save_prunes_nested_category_field_that_now_matches_parent(
+    category_values_class: type[ConfigValues],
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Pruning is per-field within nested categories: if only part of an
+    overridden category is reverted to the parent's value while another
+    field in that same category still diverges, only the reverted field is
+    dropped -- the still-diverging field remains as an override, and the
+    matching one does not.
+    """
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    # Seed root defaults: category_a.field_one=100, field_two=100.
+    config = TestConfig(manager)
+    config.save()
+
+    # Override both fields of category_a in the child layer.
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    config2.values.category_a.field_one = 4000
+    config2.values.category_a.field_two = 5000
+    config2.save()
+
+    assert child_layer.get_data() == {
+        "category_a": {"field_one": 4000, "field_two": 5000}
+    }
+
+    # Revert only field_one back to the parent's value; field_two still diverges.
+    manager.load_all()
+    config3 = TestConfig(manager, layer_filter="child")
+    config3.resolve()
+    config3.values.category_a.field_one = 100
+    config3.save()
+
+    # Only field_two remains as an override; field_one was pruned since it
+    # now matches the parent's value.
+    assert child_layer.get_data() == {"category_a": {"field_two": 5000}}
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert on_disk == {"category_a": {"field_two": 5000}}
+
+    manager.load_all()
+    config4 = TestConfig(manager, layer_filter="child")
+    config4.resolve()
+    assert config4.values.category_a.field_one == 100
+    assert config4.values.category_a.field_two == 5000
+
+
+def test_save_prunes_three_level_nested_category_field_that_now_matches_parent(
+    nested_category_values_class: type[ConfigValues],
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Per-field pruning must also work through three levels of category
+    nesting (category_a.sub_category.x/y): reverting just ``x`` back to the
+    parent's value should drop only ``x``, leaving ``y`` (still diverging)
+    and the rest of the structure intact.
+    """
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[nested_category_values_class]):
+        VALUES_CLASS = nested_category_values_class
+
+    # Seed root defaults: category_a.{field_one,field_two}=100,
+    # category_a.sub_category.{x,y}=0.
+    config = TestConfig(manager)
+    config.save()
+
+    # Override both x and y (three levels deep) in the child layer.
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    config2.values.category_a.sub_category.x = 42
+    config2.values.category_a.sub_category.y = 84
+    config2.save()
+
+    assert child_layer.get_data() == {
+        "category_a": {"sub_category": {"x": 42, "y": 84}}
+    }
+
+    # Revert only x back to the parent's value; y still diverges.
+    manager.load_all()
+    config3 = TestConfig(manager, layer_filter="child")
+    config3.resolve()
+    config3.values.category_a.sub_category.x = 0
+    config3.save()
+
+    # Only y remains as an override, nested three levels deep; x and the
+    # rest of category_a were pruned entirely since they now match root.
+    assert child_layer.get_data() == {
+        "category_a": {"sub_category": {"y": 84}}
+    }
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert on_disk == {"category_a": {"sub_category": {"y": 84}}}
+
+    manager.load_all()
+    config4 = TestConfig(manager, layer_filter="child")
+    config4.resolve()
+    assert config4.values.category_a.field_one == 100
+    assert config4.values.category_a.field_two == 100
+    assert config4.values.category_a.sub_category.x == 0
+    assert config4.values.category_a.sub_category.y == 84
+
+
+def test_revert_value_removes_flat_override_from_current_layer(
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """``revert_value`` should immediately drop a flat field's override
+    from the current layer's own data and update ``values`` in-memory to
+    whatever would be inherited from that layer's dependencies.
+    """
+
+    @dataclasses.dataclass
+    class TestValues(ConfigValues):
+        option1: int = 0
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    root_layer.set(option1=1)
+    root_layer.save()
+    child_layer.set(option1=2)
+    child_layer.save()
+
+    manager.load_all()
+    config = TestConfig(manager, layer_filter="child")
+    config.resolve()
+    assert config.values.option1 == 2
+
+    field = dataclasses.fields(TestValues)[0]
+    assert field.name == "option1"
+    config.revert_value(field)
+
+    # The override is gone from the layer's own data immediately...
+    assert "option1" not in child_layer.get_data()
+    # ...and the in-memory value now reflects the inherited (root) value.
+    assert config.values.option1 == 1
+
+    # Persisting confirms the override stays gone on disk too.
+    config.save()
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert on_disk == {}
+
+
+def test_revert_value_falls_back_to_default_with_no_dependency_value(
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """If no dependency layer provides a value for the reverted field
+    either, ``revert_value`` should fall back to the field's own default."""
+
+    @dataclasses.dataclass
+    class TestValues(ConfigValues):
+        option1: int = 7
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    manager.register(root_layer)
+    manager.load_all()
+
+    config = TestConfig(manager)
+    config.values.option1 = 99
+    config.save()
+    assert root_layer.get_data() == {"option1": 99}
+
+    field = dataclasses.fields(TestValues)[0]
+    config.revert_value(field)
+
+    assert "option1" not in root_layer.get_data()
+    assert config.values.option1 == 7
+
+
+def test_revert_value_removes_nested_category_override_from_current_layer(
+    category_values_class: type[ConfigValues],
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """``revert_value`` should also work for a category field, removing the
+    whole category's override from the current layer and restoring the
+    in-memory value to whatever is inherited from its dependencies.
+    """
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    # Seed root defaults: category_a.field_one=100, field_two=100.
+    config = TestConfig(manager)
+    config.save()
+
+    # Override category_a in the child layer.
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    config2.values.category_a.field_one = 4000
+    config2.values.category_a.field_two = 5000
+    config2.save()
+
+    assert child_layer.get_data() == {
+        "category_a": {"field_one": 4000, "field_two": 5000}
+    }
+
+    category_a_field = next(
+        f for f in dataclasses.fields(category_values_class) if f.name == "category_a"
+    )
+    config2.revert_value(category_a_field)
+
+    # The whole category override is gone from the layer immediately...
+    assert "category_a" not in child_layer.get_data()
+    # ...and the in-memory value now reflects the inherited (root) values.
+    assert config2.values.category_a.field_one == 100
+    assert config2.values.category_a.field_two == 100
+
+
+def test_revert_value_with_dotted_path_only_reverts_leaf_field(
+    category_values_class: type[ConfigValues],
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """A dot-separated path string lets ``revert_value`` target a single
+    leaf field nested within a category, leaving sibling overrides in that
+    same category untouched -- e.g.::
+
+        config.revert_value("category_a.field_one")
+    """
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[category_values_class]):
+        VALUES_CLASS = category_values_class
+
+    # Seed root defaults: category_a.field_one=100, field_two=100.
+    config = TestConfig(manager)
+    config.save()
+
+    # Override both fields of category_a in the child layer.
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    config2.values.category_a.field_one = 4000
+    config2.values.category_a.field_two = 5000
+    config2.save()
+
+    assert child_layer.get_data() == {
+        "category_a": {"field_one": 4000, "field_two": 5000}
+    }
+
+    # Revert only field_one via its dotted path; field_two must stay overridden.
+    config2.revert_value("category_a.field_one")
+
+    assert child_layer.get_data() == {"category_a": {"field_two": 5000}}
+    assert config2.values.category_a.field_one == 100
+    assert config2.values.category_a.field_two == 5000
+
+    config2.save()
+    on_disk = json.loads(child_layer.file_path.read_text())
+    assert on_disk == {"category_a": {"field_two": 5000}}
+
+
+def test_revert_value_with_dotted_path_supports_three_levels_of_nesting(
+    nested_category_values_class: type[ConfigValues],
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """A dotted path can also address a leaf field three levels deep, e.g.
+    ``"category_a.sub_category.x"``."""
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    child_layer = ConfigLayer(
+        "child",
+        file_path=config_output_dir / f"{request.node.name}_child.json",
+        depends_on=["root"],
+    )
+    manager = LayeredConfigManager()
+    manager.register(root_layer)
+    manager.register(child_layer)
+    manager.load_all()
+
+    class TestConfig(LayeredConfig[nested_category_values_class]):
+        VALUES_CLASS = nested_category_values_class
+
+    # Seed root defaults: category_a.sub_category.{x,y}=0.
+    config = TestConfig(manager)
+    config.save()
+
+    # Override both x and y (three levels deep) in the child layer.
+    manager.load_all()
+    config2 = TestConfig(manager, layer_filter="child")
+    config2.resolve()
+    config2.values.category_a.sub_category.x = 42
+    config2.values.category_a.sub_category.y = 84
+    config2.save()
+
+    assert child_layer.get_data() == {
+        "category_a": {"sub_category": {"x": 42, "y": 84}}
+    }
+
+    # Revert only x via its dotted path; y must stay overridden.
+    config2.revert_value("category_a.sub_category.x")
+
+    assert child_layer.get_data() == {"category_a": {"sub_category": {"y": 84}}}
+    assert config2.values.category_a.sub_category.x == 0
+    assert config2.values.category_a.sub_category.y == 84
+
+
+def test_revert_value_raises_for_field_not_on_values_class(
+    config_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """``revert_value`` should reject a field that doesn't belong to this
+    config's ``VALUES_CLASS``."""
+
+    @dataclasses.dataclass
+    class TestValues(ConfigValues):
+        option1: int = 0
+
+    @dataclasses.dataclass
+    class OtherValues(ConfigValues):
+        other_option: int = 0
+
+    class TestConfig(LayeredConfig[TestValues]):
+        VALUES_CLASS = TestValues
+
+    manager = LayeredConfigManager()
+    root_layer = ConfigLayer(
+        "root",
+        file_path=config_output_dir / f"{request.node.name}_root.json",
+    )
+    manager.register(root_layer)
+    manager.load_all()
+
+    config = TestConfig(manager)
+    other_field = dataclasses.fields(OtherValues)[0]
+    with pytest.raises(ValueError):
+        config.revert_value(other_field)
