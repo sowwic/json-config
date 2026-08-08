@@ -1,4 +1,6 @@
 import dataclasses
+import json
+import pathlib
 
 import pytest
 
@@ -165,3 +167,32 @@ def test_replace_updates_deeply_nested_category_and_preserves_siblings(
     # Unrelated top-level category and flat field are untouched.
     assert updated.category_b.label == "test"
     assert updated.flat_value == 10
+
+
+# ---------------------------------------------------------------------------
+# JSON round-tripping (to_dict()/replace() against actual files on disk)
+# ---------------------------------------------------------------------------
+
+
+def test_to_dict_json_round_trip_supports_three_levels_of_nesting(
+    nested_category_values_class: type[ConfigValues],
+    config_values_output_dir: pathlib.Path,
+    request: pytest.FixtureRequest,
+):
+    """Test that to_dict() produces a JSON-serializable structure that can be
+    written to disk and loaded back via replace() without any loss, through
+    three levels of category nesting."""
+    values = nested_category_values_class()
+    values.category_a.field_one = 1920
+    values.category_a.sub_category.x = 42
+    values.category_a.sub_category.y = 84
+    values.category_b.label = "prod"
+    values.flat_value = 99
+
+    output_file = config_values_output_dir / f"{request.node.name}.json"
+    output_file.write_text(json.dumps(values.to_dict(), indent=4))
+
+    loaded = json.loads(output_file.read_text())
+    restored = nested_category_values_class().replace(loaded)
+
+    assert restored.to_dict() == values.to_dict()

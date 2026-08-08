@@ -2,7 +2,10 @@ import dataclasses
 import json
 import logging
 import pathlib
+from collections.abc import Sequence
 from typing import Any
+
+from ..utils import layer_helpers
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +33,45 @@ class ConfigLayer:
     def set(self, **kwargs: Any) -> None:
         """Update this layer's values."""
         self._data.update(kwargs)
+
+    def unset(self, *keys: str) -> None:
+        """Remove *keys* from this layer's own data, if present.
+
+        Used to drop overrides that have become redundant (i.e. equal to
+        what would already be inherited from this layer's dependencies),
+        keeping the layer limited to genuine overrides.
+
+        Args:
+            *keys: str
+                The keys to remove from this layer's data.
+        """
+        for key in keys:
+            self._data.pop(key, None)
+
+    def unset_path(self, path: Sequence[str]) -> None:
+        """Remove a (possibly nested) value from this layer's own data.
+
+        Unlike :meth:`unset`, this can target a single leaf value nested
+        within a category override (e.g. ``("category_a", "field_one")``)
+        without discarding sibling overrides in that same category. Any
+        parent container that becomes empty as a result is removed too.
+
+        Args:
+            path: Sequence of keys addressing the value to remove.
+        """
+        layer_helpers.pop_nested(self._data, path)
+
+    def replace_data(self, data: dict[str, Any]) -> None:
+        """Fully replace this layer's own data with *data*.
+
+        Unlike :meth:`set`, this does not merge with the existing data --
+        any previously-stored keys not present in *data* are dropped. Used
+        when writing a fully pruned set of overrides back to the layer.
+
+        Args:
+            data: The new raw field-value mapping for this layer.
+        """
+        self._data = dict(data)
 
     def get_data(self) -> dict[str, Any]:
         """Return a shallow copy of this layer's raw data."""
@@ -63,7 +105,8 @@ class ConfigLayer:
         if self.file_path is None:
             raise RuntimeError(f"Layer '{self.name}' has no file_path set.")
 
-        if not self.get_data():
+        # If layer has no data and the file does not exist, skip saving.
+        if not self.get_data() and not self.file_path.is_file():
             LOGGER.debug(f"[{self.name}] No data to save, skipping.")
             return
 

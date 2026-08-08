@@ -157,7 +157,7 @@ def test_resolve_many(
     }
 
 
-def test_root_layers(output_dir: pathlib.Path):
+def test_root_layers(config_manager_output_dir: pathlib.Path):
     manager = LayeredConfigManager()
     for i in range(1, 4):
         root_layer = ConfigLayer(f"root{i}")
