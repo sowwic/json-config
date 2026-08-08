@@ -46,11 +46,12 @@ class _CategoryBValues(ConfigValues):
 class _CategoryValues(ConfigValues):
     """ConfigValues with a single level of category nesting.
 
-    Structure::
-
+    Structure:
+        ```
         category_a (category) -> field_one, field_two
         category_b (category) -> label
-        flat_value            -> flat field
+        flat_value -> flat field
+        ```
     """
 
     category_a: _CategoryAValues = Field(
@@ -78,11 +79,12 @@ class _NestedCategoryAValues(ConfigValues):
 class _NestedCategoryValues(ConfigValues):
     """ConfigValues with three levels of category nesting.
 
-    Structure::
-
+    Structure:
+        ```
         category_a (category) -> field_one, field_two, sub_category (category) -> x, y
         category_b (category) -> label
         flat_value            -> flat field
+        ```
     """
 
     category_a: _NestedCategoryAValues = Field(

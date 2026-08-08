@@ -26,17 +26,17 @@ class _ManagerMeta(type):
 class ConfigLayerManager(metaclass=_ManagerMeta):
     """Central manager that owns and resolves all config layers.
 
-    Usage::
-
+    Usage:
+        ```python
         manager = ConfigLayerManager()
 
         # Register layers (order of registration does NOT matter;
         # depends_on drives the merge order).
-        manager.register(ConfigLayer("main",  file_path=Path("config/main.json")))
-        manager.register(ConfigLayer("user",  depends_on=["main"],
-                                              file_path=Path("config/user.json")))
+        manager.register(ConfigLayer("main", file_path=Path("config/main.json")))
+        manager.register(ConfigLayer("user", depends_on=["main"],
+            file_path=Path("config/user.json")))
         manager.register(ConfigLayer("local", depends_on=["user"],
-                                              file_path=Path("config/local.json")))
+            file_path=Path("config/local.json")))
 
         # Load all layers from disk.
         manager.load_all()
@@ -48,6 +48,7 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         # Modify a layer at runtime.
         manager["user"].set(theme="dark")
         manager.save("user")
+        ```
     """
 
     def __init__(self) -> None:
@@ -75,11 +76,10 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         dict of children, or an empty dict / set leaf.
 
         Args:
-            tree:            Nested mapping of directory path strings.
-            config_filename: JSON filename looked for inside each directory.
+            tree (dict): Nested mapping of directory path strings.
 
-        Example::
-
+        Example:
+            ```python
             manager.register_from_paths({
                 "configs/root.json": {
                     "configs/root/child.json": {
@@ -93,6 +93,7 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
             #   child       (depends_on=["root"])
             #   grandchild  (depends_on=["child"])
             #   other       (depends_on=["root"])
+            ```
         """
 
         def _walk(subtree: dict | set, parent_name: str | None) -> None:
@@ -100,8 +101,7 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
 
             Args:
                 subtree (dict | set): The current subtree to walk.
-                parent_name (str | None): The name of the parent layer,
-                    or None for root layers.
+                parent_name (str | None): The name of the parent layer, or None.
             """
             items = subtree if isinstance(subtree, dict) else {p: {} for p in subtree}
             for path_str, children in items.items():
@@ -124,7 +124,7 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         """Remove a layer (and any references to it are the caller's problem).
 
         Args:
-            name: Name of the layer to remove.
+            name (str): Name of the layer to remove.
         """
         self._layers.pop(name, None)
 
@@ -136,8 +136,8 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         """Seed root layers with defaults and persist if file is absent.
 
         Args:
-            defaults: Dictionary of field names to default values
-            to seed into root layers.
+            defaults (dict[str, Any]): Dictionary of field names to default values
+                to seed into root layers.
         """
         for name in self.sorted_names():
             layer = self[name]
@@ -168,8 +168,8 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         """Return layer names in topological order.
 
         Args:
-            up_to: If given, return only the sub-graph needed to resolve
-                   that layer (the layer itself + all its transitive deps).
+            up_to (str | None): If given, return only the sub-graph needed to resolve
+                that layer (the layer itself + all its transitive deps).
         """
         if up_to is not None:
             subset = self._reachable_subgraph(up_to)
@@ -204,8 +204,8 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         """Return the fully-merged config dict.
 
         Args:
-            up_to: Resolve only up to (and including) this layer.
-                   Useful to preview what a specific layer contributes.
+            up_to (str | None): Resolve only up to (and including) this layer.
+                Useful to preview what a specific layer contributes.
         """
         return functools.reduce(
             layer_helpers.deep_merge_dicts,
@@ -221,15 +221,19 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         right — so later names take precedence over earlier ones on conflicts.
 
         Args:
-            names: Layer names to resolve, in ascending priority order.
+            names (*str): Layer names to resolve, in ascending priority order.
 
-        Example::
+        Returns:
+            dict[str, Any]: The merged config dictionary.
 
+        Example:
+            ```python
             # root → layer1
             # rooot → layer2
             cfg = manager.resolve_many("layer1", "layer2")
             # layer2 wins over layer1 on conflicting keys;
             # both override root.
+            ```
         """
         return functools.reduce(
             layer_helpers.deep_merge_dicts,

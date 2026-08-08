@@ -766,9 +766,10 @@ def test_revert_value_with_dotted_path_only_reverts_leaf_field(
 ):
     """A dot-separated path string lets ``revert_value`` target a single
     leaf field nested within a category, leaving sibling overrides in that
-    same category untouched -- e.g.::
-
+    same category untouched -- e.g.:
+        ```python
         config.revert_value("category_a.field_one")
+        ```
     """
     root_layer = ConfigLayer(
         "root",

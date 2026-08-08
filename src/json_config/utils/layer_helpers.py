@@ -13,6 +13,13 @@ def deep_merge_dicts(base: dict, override: dict) -> dict:
 
     - Nested dicts are merged recursively.
     - All other types (including lists) are replaced by the override value.
+
+    Args:
+        base (dict): The base dictionary to merge into.
+        override (dict): The dictionary to merge from.
+
+    Returns:
+        dict: The merged dictionary.
     """
     result = dict(base)
     for key, value in override.items():
@@ -109,8 +116,8 @@ def pop_nested(data: dict, path: Sequence[str]) -> None:
 def nest_value(path: Sequence[str], value: typing.Any) -> dict:
     """Wrap *value* in nested dicts following *path*.
 
-    Example::
-
+    Example:
+        ```python
         nest_value(("category_a", "field_one"), 42)
         # -> {"category_a": {"field_one": 42}}
 
@@ -130,11 +137,17 @@ def nest_value(path: Sequence[str], value: typing.Any) -> dict:
 def topological_sort_layers(layers: dict[str, ConfigLayer]) -> list[str]:
     """Return layer names in dependency-resolved order (dependencies first).
 
-    Uses :class:`graphlib.TopologicalSorter` from the standard library.
+    Uses `graphlib.TopologicalSorter` from the standard library.
+
+    Args:
+        layers (dict[str, ConfigLayer]): The layers to sort.
 
     Raises:
         ValueError: if a dependency is missing or not registered.
         graphlib.CycleError: if a circular dependency is detected.
+
+    Returns:
+        list[str]: The sorted layer names.
     """
     for name, layer in layers.items():
         for dep in layer.depends_on:
