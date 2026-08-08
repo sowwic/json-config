@@ -1,5 +1,7 @@
 import dataclasses
 
+import pytest
+
 from json_config.api import ConfigValues
 
 # ---------------------------------------------------------------------------
@@ -91,6 +93,22 @@ def test_category_key_can_differ_from_field_name():
 
     updated = values.replace({"renamed": {"value": 5}})
     assert updated.inner.value == 5
+
+
+def test_nested_config_values_without_category_raises_value_error():
+    """Test that a nested ConfigValues field missing category metadata
+    raises a ValueError as soon as the outer class is instantiated."""
+
+    @dataclasses.dataclass
+    class InnerValues(ConfigValues):
+        value: int = 1
+
+    @dataclasses.dataclass
+    class OuterValues(ConfigValues):
+        inner: InnerValues = dataclasses.field(default_factory=InnerValues)
+
+    with pytest.raises(ValueError, match="inner"):
+        OuterValues()
 
 
 # ---------------------------------------------------------------------------
