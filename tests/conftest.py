@@ -100,16 +100,32 @@ class _NestedCategoryValues(ConfigValues):
     flat_value: int = 10
 
 
+# One subdirectory per test module that may write output under
+# TEST_OUTPUT_DIR, so the layout is predictable even for modules that don't
+# currently exercise their own output dir fixture.
+_TEST_OUTPUT_SUBDIRS = (
+    "config",
+    "config_values",
+    "config_manager",
+    "config_layer",
+)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _clean_test_output_dir() -> None:
-    """Remove any leftover .test_output directory at the start of the session.
+    """Remove any leftover .test_output directory at the start of the session,
+    then recreate its per-module subdirectories.
 
     The various *_output_dir fixtures below only ever `mkdir(exist_ok=True)`
     and never clean up after themselves, so stale files from a previous run
     (e.g. written under an old field/category name) could otherwise bleed
-    into a fresh run's assertions.
+    into a fresh run's assertions. Subdirectories are (re)created eagerly
+    here so the expected layout exists even for modules that don't
+    currently request their output dir fixture.
     """
     shutil.rmtree(TEST_OUTPUT_DIR, ignore_errors=True)
+    for subdir in _TEST_OUTPUT_SUBDIRS:
+        (TEST_OUTPUT_DIR / subdir).mkdir(parents=True, exist_ok=True)
 
 
 @pytest.fixture(autouse=True)
@@ -131,46 +147,45 @@ def output_dir() -> pathlib.Path:
 
 
 @pytest.fixture(scope="session")
-def simple_config_output_dir() -> pathlib.Path:
-    """Output directory for tests.
+def config_output_dir() -> pathlib.Path:
+    """Output directory for tests in ``test_config.py``.
 
     Returns:
         pathlib.Path: path to test output directory.
 
     """
-    out_dir = TEST_OUTPUT_DIR / "simple_config"
+    out_dir = TEST_OUTPUT_DIR / "config"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
 
 @pytest.fixture(scope="session")
-def layered_config_output_dir() -> pathlib.Path:
-    """Output directory for tests.
+def config_values_output_dir() -> pathlib.Path:
+    """Output directory for tests in ``test_config_values.py``.
 
     Returns:
         pathlib.Path: path to test output directory.
-
     """
-    out_dir = TEST_OUTPUT_DIR / "layered_config"
+    out_dir = TEST_OUTPUT_DIR / "config_values"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
 
 @pytest.fixture(scope="session")
-def manager_output_dir() -> pathlib.Path:
-    """Output directory for tests.
+def config_manager_output_dir() -> pathlib.Path:
+    """Output directory for tests in ``test_config_manager.py``.
 
     Returns:
         pathlib.Path: path to test output directory.
     """
-    out_dir = TEST_OUTPUT_DIR / "manager"
+    out_dir = TEST_OUTPUT_DIR / "config_manager"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
 
 @pytest.fixture(scope="session")
 def config_layer_output_dir() -> pathlib.Path:
-    """Output directory for tests.
+    """Output directory for tests in ``test_config_layer.py``.
 
     Returns:
         pathlib.Path: path to test output directory.
