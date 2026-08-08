@@ -51,7 +51,7 @@ class ConfigLayer:
     def unset_path(self, path: Sequence[str]) -> None:
         """Remove a (possibly nested) value from this layer's own data.
 
-        Unlike :meth:`unset`, this can target a single leaf value nested
+        Unlike `unset`, this can target a single leaf value nested
         within a category override (e.g. ``("category_a", "field_one")``)
         without discarding sibling overrides in that same category. Any
         parent container that becomes empty as a result is removed too.
@@ -64,7 +64,7 @@ class ConfigLayer:
     def replace_data(self, data: dict[str, Any]) -> None:
         """Fully replace this layer's own data with *data*.
 
-        Unlike :meth:`set`, this does not merge with the existing data --
+        Unlike `set`, this does not merge with the existing data --
         any previously-stored keys not present in *data* are dropped. Used
         when writing a fully pruned set of overrides back to the layer.
 

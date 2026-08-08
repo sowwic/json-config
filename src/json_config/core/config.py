@@ -14,11 +14,12 @@ class LayeredConfig[ValuesTypeVar]:
 
     Provides a way to access and update config values from multiple layers.
 
-    Usage::
+    *Example*:
+        ```python
         class ExampleValues(ConfigValues):
             int_value: int = 0
             str_value: str = ""
-            list_value: list[str] = dataclasses.field(
+            list_value: list[str] = Field(
                 default_factory=list,
             )
 
@@ -127,9 +128,8 @@ class LayeredConfig[ValuesTypeVar]:
     def values(self) -> ValuesTypeVar:
         """Return the current values object.
 
-        Returns
-        -------
-        T: The current values object.
+        Returns:
+            T: The current values object.
         """
         return self._values
 
@@ -197,10 +197,10 @@ class LayeredConfig[ValuesTypeVar]:
         layer's dependencies, discarding any override for it on that layer.
 
         This immediately removes the field's own override from the current
-        layer's raw data, and updates :attr:`values` to reflect the value
+        layer's raw data, and updates `values` to reflect the value
         that would be resolved without that layer's own contribution
         (falling back to the field's default if no dependency provides a
-        value for it either). Call :meth:`save` afterwards to persist the
+        value for it either). Call `save` afterwards to persist the
         change to disk.
 
         Args:
