@@ -51,6 +51,10 @@ class ConfigValues:
         # }
     """
 
+    def __post_init__(self) -> None:
+        """Run extra initialization after dataclass fields are set."""
+        self._validate_fields_categories()
+
     @classmethod
     def get_fields_names(cls) -> set[str]:
         """Get available config field names.
@@ -102,6 +106,22 @@ class ConfigValues:
             defaults[cls._field_key(field)] = value
 
         return defaults
+
+    def _validate_fields_categories(self) -> None:
+        """Validate that nested ConfigValues fields declare a category.
+
+        Raises:
+            ValueError: If a field's value is itself a :class:`ConfigValues`
+                instance but the field was not tagged with
+                ``metadata={"category": ...}``.
+        """
+        for field in dataclasses.fields(self):
+            value = getattr(self, field.name)
+            if isinstance(value, ConfigValues) and "category" not in field.metadata:
+                raise ValueError(
+                    f"Field '{field.name}' on {type(self).__name__} is a nested "
+                    "ConfigValues but is missing metadata={'category': ...}"
+                )
 
     def to_dict(self) -> dict[str, typing.Any]:
         """Convert this instance to a plain (possibly nested) dict.
