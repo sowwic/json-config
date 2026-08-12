@@ -3,7 +3,7 @@ import logging
 import typing
 
 from ..utils import layer_helpers
-from .config_manager import LayeredConfigManager
+from .layer_manager import ConfigLayerManager
 
 LOGGER = logging.getLogger(__name__)
 T = typing.TypeVar("T", bound="ConfigValues")
@@ -189,19 +189,19 @@ class LayeredConfig[T]:
 
     def __init__(
         self,
-        config_manager: LayeredConfigManager | None = None,
+        layer_manager: ConfigLayerManager | None = None,
         layer_filter: str | None = None,
     ):
         """Initialize the config.
 
         Args:
-            config_manager (LayeredConfigManager | None, optional): The config manager
+            layer_manager (ConfigLayerManager | None, optional): The config manager
                 to use, by default None (a new manager is created).
             layer_filter (str | None, optional): The layer filter to use,
                 by default None (the root layer is used).
         """
-        self._config_manager: LayeredConfigManager = (
-            config_manager if config_manager else LayeredConfigManager()
+        self._layer_manager: ConfigLayerManager = (
+            layer_manager if layer_manager else ConfigLayerManager()
         )
         self._layer_filter: str | None = layer_filter
         self._values: T = self.VALUES_CLASS()
@@ -219,17 +219,17 @@ class LayeredConfig[T]:
         return self._layer_filter in self.layers
 
     @property
-    def manager(self) -> LayeredConfigManager:
+    def layer_manager(self) -> ConfigLayerManager:
         """
-        Return the config manager.
+        Return the config layer manager.
 
         Raises:
-            ValueError: If the config manager is not set.
+            ValueError: If the config layer manager is not set.
 
         Returns:
-            LayeredConfigManager: The config manager.
+            ConfigLayerManager: The config layer manager.
         """
-        return self._config_manager
+        return self._layer_manager
 
     @property
     def root_layers(self) -> list[str]:
@@ -238,7 +238,7 @@ class LayeredConfig[T]:
         Returns:
             dict[str, Any]: The root layers.
         """
-        return self._config_manager.root_layers
+        return self._layer_manager.root_layers
 
     @property
     def current_layer(self) -> str:
@@ -257,7 +257,7 @@ class LayeredConfig[T]:
             list[str]: The list of layer names.
         """
 
-        return list(self._config_manager.sorted_names())
+        return list(self._layer_manager.sorted_names())
 
     @property
     def layer_filter(self) -> str | None:
@@ -288,8 +288,8 @@ class LayeredConfig[T]:
         Returns:
             dict[str, typing.Any]: The resolved values.
         """
-        self.manager.load_all()
-        sorted_layer_names = self.manager.sorted_names()
+        self.layer_manager.load_all()
+        sorted_layer_names = self.layer_manager.sorted_names()
         layer_name = sorted_layer_names[0]
         if self.layer_filter in self.layers:
             layer_name = self.layer_filter
@@ -299,7 +299,7 @@ class LayeredConfig[T]:
                 f"valid options are: {self.layers}"
             )
 
-        resolved_dict = self.manager.resolve(up_to=layer_name)
+        resolved_dict = self.layer_manager.resolve(up_to=layer_name)
         self._values = self.values.replace(resolved_dict)
 
         return resolved_dict
@@ -335,8 +335,8 @@ class LayeredConfig[T]:
                 The name of the layer to write to.
         """
 
-        layer = self.manager[layer_name]
-        baseline = self.manager.resolve_many(*layer.depends_on)
+        layer = self.layer_manager[layer_name]
+        baseline = self.layer_manager.resolve_many(*layer.depends_on)
         current_dict = self._values.to_dict()
         diff = layer_helpers.deep_diff_dicts(current_dict, baseline)
         layer.replace_data(diff)
@@ -380,10 +380,10 @@ class LayeredConfig[T]:
                 )
             path = (self.VALUES_CLASS._field_key(field),)
 
-        layer = self.manager[self.current_layer]
+        layer = self.layer_manager[self.current_layer]
         layer.unset_path(path)
 
-        baseline = self.manager.resolve_many(*layer.depends_on)
+        baseline = self.layer_manager.resolve_many(*layer.depends_on)
         defaults = self.VALUES_CLASS.get_defaults()
         _unset = object()
         value = layer_helpers.get_nested(baseline, path, _unset)
@@ -398,7 +398,7 @@ class LayeredConfig[T]:
 
     def save(self):
         """Save the current values to the active layer."""
-        self.manager.seed_root_layers(self.values.get_defaults())
+        self.layer_manager.seed_root_layers(self.values.get_defaults())
         current_layer = self.current_layer
         self.write_to_layer(current_layer)
-        self.manager.save(current_layer)
+        self.layer_manager.save(current_layer)
