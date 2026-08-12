@@ -4,7 +4,7 @@ import shutil
 
 import pytest
 
-from json_config.api import ConfigLayer, ConfigValues, ConfigLayerManager
+from json_config.api import ConfigLayer, ConfigLayerManager, ConfigValues
 
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"

@@ -99,8 +99,9 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
             """Recursively walk the tree and register layers.
 
             Args:
-                subtree: The current subtree to walk.
-                parent_name: The name of the parent layer, or None for root layers.
+                subtree (dict | set): The current subtree to walk.
+                parent_name (str | None): The name of the parent layer,
+                    or None for root layers.
             """
             items = subtree if isinstance(subtree, dict) else {p: {} for p in subtree}
             for path_str, children in items.items():
