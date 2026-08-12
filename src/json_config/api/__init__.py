@@ -1,5 +1,6 @@
-from ..core.config import ConfigValues, LayeredConfig
+from ..core.config import LayeredConfig
 from ..core.config_layer import ConfigLayer
+from ..core.config_values import ConfigValues
 from ..core.layer_manager import ConfigLayerManager
 
 __all__ = [
