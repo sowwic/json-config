@@ -4,7 +4,7 @@ import shutil
 
 import pytest
 
-from json_config.api import ConfigLayer, ConfigValues, LayeredConfigManager
+from json_config.api import ConfigLayer, ConfigValues, ConfigLayerManager
 
 TESTS_DIR = pathlib.Path.cwd() / "tests"
 FIXTURES_DIR = TESTS_DIR / "fixtures"
@@ -106,7 +106,7 @@ class _NestedCategoryValues(ConfigValues):
 _TEST_OUTPUT_SUBDIRS = (
     "config",
     "config_values",
-    "config_manager",
+    "layer_manager",
     "config_layer",
 )
 
@@ -131,7 +131,7 @@ def _clean_test_output_dir() -> None:
 @pytest.fixture(autouse=True)
 def fresh_manager() -> None:
     yield
-    LayeredConfigManager.clear()
+    ConfigLayerManager.clear()
 
 
 @pytest.fixture(scope="session")
@@ -172,13 +172,13 @@ def config_values_output_dir() -> pathlib.Path:
 
 
 @pytest.fixture(scope="session")
-def config_manager_output_dir() -> pathlib.Path:
-    """Output directory for tests in ``test_config_manager.py``.
+def layer_manager_output_dir() -> pathlib.Path:
+    """Output directory for tests in ``test_layer_manager.py``.
 
     Returns:
         pathlib.Path: path to test output directory.
     """
-    out_dir = TEST_OUTPUT_DIR / "config_manager"
+    out_dir = TEST_OUTPUT_DIR / "layer_manager"
     out_dir.mkdir(exist_ok=True, parents=True)
     return out_dir
 
@@ -196,8 +196,8 @@ def config_layer_output_dir() -> pathlib.Path:
 
 
 @pytest.fixture()
-def preset_app_manager() -> LayeredConfigManager:
-    manager = LayeredConfigManager()
+def preset_app_manager() -> ConfigLayerManager:
+    manager = ConfigLayerManager()
     main_layer = ConfigLayer("main", file_path=MAIN_CONFIG_FIXTURE)
     workspace_layer = ConfigLayer(
         "workspace", file_path=WORKSPACE_CONFIG_FIXTURE, depends_on=["main"]
@@ -210,12 +210,12 @@ def preset_app_manager() -> LayeredConfigManager:
     manager.register(workspace_layer)
     manager.register(user_layer)
     yield manager
-    LayeredConfigManager.clear()
+    ConfigLayerManager.clear()
 
 
 @pytest.fixture()
-def preset_user_manager() -> LayeredConfigManager:
-    manager = LayeredConfigManager()
+def preset_user_manager() -> ConfigLayerManager:
+    manager = ConfigLayerManager()
     default_layer = ConfigLayer("default", file_path=USER_DEFAULT_FIXTURE)
     user1_layer = ConfigLayer("user1", file_path=USER1_FIXTURE, depends_on=["default"])
     user2_layer = ConfigLayer("user2", file_path=USER2_FIXTURE, depends_on=["default"])
@@ -224,7 +224,7 @@ def preset_user_manager() -> LayeredConfigManager:
     manager.register(user1_layer)
     manager.register(user2_layer)
     yield manager
-    LayeredConfigManager.clear()
+    ConfigLayerManager.clear()
 
 
 @pytest.fixture()

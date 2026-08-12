@@ -10,9 +10,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class _ManagerMeta(type):
-    """Singleton metaclass for LayeredConfigManager."""
+    """Singleton metaclass for ConfigLayerManager."""
 
-    _instance: "LayeredConfigManager | None" = None
+    _instance: "ConfigLayerManager | None" = None
 
     def __call__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -23,12 +23,12 @@ class _ManagerMeta(type):
         cls._instance = None
 
 
-class LayeredConfigManager(metaclass=_ManagerMeta):
+class ConfigLayerManager(metaclass=_ManagerMeta):
     """Central manager that owns and resolves all config layers.
 
     Usage::
 
-        manager = LayeredConfigManager()
+        manager = ConfigLayerManager()
 
         # Register layers (order of registration does NOT matter;
         # depends_on drives the merge order).

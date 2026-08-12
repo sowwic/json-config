@@ -2,20 +2,20 @@ import pathlib
 
 import pytest
 
-from json_config.api import ConfigLayer, LayeredConfigManager
+from json_config.api import ConfigLayer, ConfigLayerManager
 
 
-def test_repr(preset_app_manager: LayeredConfigManager) -> None:
+def test_repr(preset_app_manager: ConfigLayerManager) -> None:
     """Test the __repr__ method."""
     assert (
         repr(preset_app_manager)
-        == f"LayeredConfigManager(layers={preset_app_manager.sorted_names()})"
+        == f"ConfigLayerManager(layers={preset_app_manager.sorted_names()})"
     )
 
 
 def test_init_with_single_layer(simple_config_file: pathlib.Path) -> None:
     """Test initializing with a single layer and resolving values."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     layer = ConfigLayer("main", file_path=simple_config_file)
     manager.register(layer)
     manager.load_all()
@@ -24,7 +24,7 @@ def test_init_with_single_layer(simple_config_file: pathlib.Path) -> None:
 
 def test_resiter_layer_with_same_name_raises_error() -> None:
     """Test registering a layer with the same name raises a ValueError."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     layer1 = ConfigLayer("main")
     layer2 = ConfigLayer("main")
     manager.register(layer1)
@@ -34,7 +34,7 @@ def test_resiter_layer_with_same_name_raises_error() -> None:
 
 def test_unregister_layer() -> None:
     """Test unregistering a layer."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     layer = ConfigLayer("test")
     manager.register(layer)
     assert "test" in manager._layers
@@ -48,7 +48,7 @@ def test_init_with_multiple_layers(
     user_config_file: pathlib.Path,
 ) -> None:
     """Test resolving values from multiple layers with dependencies."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     main_layer = ConfigLayer("main", file_path=main_config_file)
     workspace_layer = ConfigLayer(
         "workspace", file_path=workspace_config_file, depends_on=["main"]
@@ -75,7 +75,7 @@ def test_init_from_path_tree(
 ) -> None:
     """Test resolving values from multiple layers with dependencies."""
     path_tree = {main_config_file: {workspace_config_file: {user_config_file: {}}}}
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     manager.register_from_paths_tree(path_tree)
     manager.load_all()
 
@@ -87,14 +87,14 @@ def test_init_from_path_tree(
 
 def test_load_layer_missing_dependancy_value_error():
     """Test that loading a layer with a missing dependancy raises a ValueError."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     test_layer = ConfigLayer("test", depends_on=["missing"])
     manager.register(test_layer)
     with pytest.raises(ValueError):
         manager.load_all()
 
 
-def test_loading_to_layer(preset_app_manager: LayeredConfigManager) -> None:
+def test_loading_to_layer(preset_app_manager: ConfigLayerManager) -> None:
     """Test loading a layer from its file and resolving it."""
     preset_app_manager.load_all()
     config_dict = preset_app_manager.resolve(up_to="main")
@@ -107,7 +107,7 @@ def test_loading_to_layer(preset_app_manager: LayeredConfigManager) -> None:
     )
 
 
-def test_load_branching_configs(preset_user_manager: LayeredConfigManager) -> None:
+def test_load_branching_configs(preset_user_manager: ConfigLayerManager) -> None:
     """Test loading a branching config with multiple layers."""
     ...
     preset_user_manager.load_all()
@@ -126,7 +126,7 @@ def test_multiple_root_configs(
     workspace_config_file: pathlib.Path,
 ) -> None:
     """Test resolving a config with multiple root layers."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     root_layer_1 = ConfigLayer("root_1", file_path=main_config_file)
     root_layer_2 = ConfigLayer("root_2", file_path=workspace_config_file)
     manager.register(root_layer_1)
@@ -144,7 +144,7 @@ def test_resolve_many(
     workspace_config_file: pathlib.Path,
 ) -> None:
     """Test resolving multiple independent branches and merging them in order."""
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     root_layer_1 = ConfigLayer("root_1", file_path=main_config_file)
     root_layer_2 = ConfigLayer("root_2", file_path=workspace_config_file)
     manager.register(root_layer_1)
@@ -157,8 +157,8 @@ def test_resolve_many(
     }
 
 
-def test_root_layers(config_manager_output_dir: pathlib.Path):
-    manager = LayeredConfigManager()
+def test_root_layers(layer_manager_output_dir: pathlib.Path):
+    manager = ConfigLayerManager()
     for i in range(1, 4):
         root_layer = ConfigLayer(f"root{i}")
         manager.register(root_layer)
@@ -175,7 +175,7 @@ def test_resolve_up_to_missing_dependency_raises_value_error() -> None:
     dependency must raise a ValueError, consistent with the no-`up_to` path
     (sorted_names()/load_all()), instead of a bare KeyError.
     """
-    manager = LayeredConfigManager()
+    manager = ConfigLayerManager()
     test_layer = ConfigLayer("test", depends_on=["missing"])
     manager.register(test_layer)
 
