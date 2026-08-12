@@ -28,7 +28,7 @@ class LayeredConfig[ValuesTypeVar]:
         ```
     """
 
-    VALUES_CLASS: type[ValuesTypeVar] = ValuesTypeVar
+    VALUES_CLASS: type[ValuesTypeVar] = ConfigValues
 
     def __init__(
         self,
