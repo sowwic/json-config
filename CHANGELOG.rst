@@ -1,6 +1,11 @@
 json-config
 ===========
 
+v1.0.2
+------
+* Implement clearance of non-overrides and value revert (#16)
+* Prevent ConfigValues to be nested without specifying category metadata (#15)
+
 v1.0.1
 ------
 * Fixed: LayeredConfigManager.resolve(up_to=...) raised a bare KeyError instead of ValueError (#6)
