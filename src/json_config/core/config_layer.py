@@ -64,7 +64,7 @@ class ConfigLayer:
     def replace_data(self, data: dict[str, Any]) -> None:
         """Fully replace this layer's own data with *data*.
 
-        Unlike `set`, this does not merge with the existing data --
+        Unlike `set`, this does not merge with the existing data -
         any previously-stored keys not present in *data* are dropped. Used
         when writing a fully pruned set of overrides back to the layer.
 

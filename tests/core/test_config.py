@@ -367,7 +367,7 @@ def test_save_to_fresh_child_layer_persists_changed_values(
     assert child_layer.get_data() == {"theme": "dark"}
     assert child_layer.file_path.is_file()
     # ...but the unchanged sibling field is not duplicated into the child
-    # layer -- it should stay a sparse override file.
+    # layer - it should stay a sparse override file.
     assert "font_size" not in child_layer.get_data()
 
     on_disk = json.loads(child_layer.file_path.read_text())
@@ -501,7 +501,7 @@ def test_save_prunes_nested_category_field_that_now_matches_parent(
     """Pruning is per-field within nested categories: if only part of an
     overridden category is reverted to the parent's value while another
     field in that same category still diverges, only the reverted field is
-    dropped -- the still-diverging field remains as an override, and the
+    dropped - the still-diverging field remains as an override, and the
     matching one does not.
     """
     root_layer = ConfigLayer(
@@ -766,7 +766,7 @@ def test_revert_value_with_dotted_path_only_reverts_leaf_field(
 ):
     """A dot-separated path string lets ``revert_value`` target a single
     leaf field nested within a category, leaving sibling overrides in that
-    same category untouched -- e.g.:
+    same category untouched e.g.:
         ```python
         config.revert_value("category_a.field_one")
         ```

@@ -14,7 +14,7 @@ class LayeredConfig[ValuesTypeVar]:
 
     Provides a way to access and update config values from multiple layers.
 
-    *Example*:
+    Example:
         ```python
         class ExampleValues(ConfigValues):
             int_value: int = 0
@@ -228,11 +228,10 @@ class LayeredConfig[ValuesTypeVar]:
 
         baseline = self.layer_manager.resolve_many(*layer.depends_on)
         defaults = self.VALUES_CLASS.get_defaults()
-        _unset = object()
-        value = layer_helpers.get_nested(baseline, path, _unset)
-        if value is _unset:
-            value = layer_helpers.get_nested(defaults, path, _unset)
-        if value is not _unset:
+        value = layer_helpers.get_nested(baseline, path)
+        if value is layer_helpers.UNSET_DICT_VALUE:
+            value = layer_helpers.get_nested(defaults, path)
+        if value is not layer_helpers.UNSET_DICT_VALUE:
             self._values = self._values.replace(layer_helpers.nest_value(path, value))
 
     def reset(self):
