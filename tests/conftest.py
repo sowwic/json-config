@@ -1,8 +1,8 @@
-import dataclasses
 import pathlib
 import shutil
 
 import pytest
+from pydantic import Field
 
 from json_config.api import ConfigLayer, ConfigLayerManager, ConfigValues
 
@@ -34,18 +34,15 @@ INVALID_NOT_DICT_LAYER = LAYER_TESTING_FIXTURES_DIR / "invalid_not_dict_layer.js
 # ---------------------------------------------------------------------------
 
 
-@dataclasses.dataclass
 class _CategoryAValues(ConfigValues):
     field_one: int = 100
     field_two: int = 100
 
 
-@dataclasses.dataclass
 class _CategoryBValues(ConfigValues):
     label: str = "test"
 
 
-@dataclasses.dataclass
 class _CategoryValues(ConfigValues):
     """ConfigValues with a single level of category nesting.
 
@@ -56,31 +53,28 @@ class _CategoryValues(ConfigValues):
         flat_value            -> flat field
     """
 
-    category_a: _CategoryAValues = dataclasses.field(
-        default_factory=_CategoryAValues, metadata={"category": "category_a"}
+    category_a: _CategoryAValues = Field(
+        default_factory=_CategoryAValues, alias="category_a"
     )
-    category_b: _CategoryBValues = dataclasses.field(
-        default_factory=_CategoryBValues, metadata={"category": "category_b"}
+    category_b: _CategoryBValues = Field(
+        default_factory=_CategoryBValues, alias="category_b"
     )
     flat_value: int = 10
 
 
-@dataclasses.dataclass
 class _SubCategoryValues(ConfigValues):
     x: int = 0
     y: int = 0
 
 
-@dataclasses.dataclass
 class _NestedCategoryAValues(ConfigValues):
     field_one: int = 100
     field_two: int = 100
-    sub_category: _SubCategoryValues = dataclasses.field(
-        default_factory=_SubCategoryValues, metadata={"category": "sub_category"}
+    sub_category: _SubCategoryValues = Field(
+        default_factory=_SubCategoryValues, alias="sub_category"
     )
 
 
-@dataclasses.dataclass
 class _NestedCategoryValues(ConfigValues):
     """ConfigValues with three levels of category nesting.
 
@@ -91,11 +85,11 @@ class _NestedCategoryValues(ConfigValues):
         flat_value            -> flat field
     """
 
-    category_a: _NestedCategoryAValues = dataclasses.field(
-        default_factory=_NestedCategoryAValues, metadata={"category": "category_a"}
+    category_a: _NestedCategoryAValues = Field(
+        default_factory=_NestedCategoryAValues, alias="category_a"
     )
-    category_b: _CategoryBValues = dataclasses.field(
-        default_factory=_CategoryBValues, metadata={"category": "category_b"}
+    category_b: _CategoryBValues = Field(
+        default_factory=_CategoryBValues, alias="category_b"
     )
     flat_value: int = 10
 

@@ -12,7 +12,7 @@ packages = [
     {include = "json_config", from="src"},
 ]
 dependencies = [
-
+    "pydantic>=2.13.5",
 ]
 
 

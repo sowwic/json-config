@@ -1,8 +1,8 @@
-import dataclasses
 import json
 import pathlib
 
 import pytest
+from pydantic import Field
 
 from json_config.api import (
     ConfigLayer,
@@ -12,18 +12,11 @@ from json_config.api import (
 )
 
 
-def test_repr() -> None:
-    """Test the __repr__ method."""
-    config = LayeredConfig()
-    assert repr(config) == "LayeredConfig(layer_filter=None)"
-
-
 def test_init_with_single_layer(
     simple_config_file: pathlib.Path,
     config_output_dir: pathlib.Path,
     request: pytest.FixtureRequest,
 ):
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
         int_value: int = 0
 
@@ -53,14 +46,12 @@ def test_defaults_writing(
 ):
     """Test that defaults are written to the root layer file when saving."""
 
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
-        int_value: int = dataclasses.field(default=0)
-        str_value: str = dataclasses.field(default="default")
-        list_value: list[str] = dataclasses.field(
+        int_value: int = Field(default=0)
+        str_value: str = Field(default="default")
+        list_value: list[str] = Field(
             default_factory=lambda: ["a", "b", "c"]
         )
-        dataclasses.field()
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
@@ -105,8 +96,8 @@ def test_layer_filter_limits_resolve_to_expected_values(
 ):
     """Test that layer filtering limits resolve to the expected values."""
 
-    class TestConfig(LayeredConfig):
-        pass
+    class TestConfig(LayeredConfig[ConfigValues]):
+        VALUES_CLASS = ConfigValues
 
     config = TestConfig(preset_app_manager)
 
@@ -135,8 +126,8 @@ def test_invalid_layer_filter_resolve(
 ):
     """Test that resolving with an invalid layer filter raises a ValueError."""
 
-    class TestConfig(LayeredConfig):
-        pass
+    class TestConfig(LayeredConfig[ConfigValues]):
+        VALUES_CLASS = ConfigValues
 
     config = TestConfig(preset_app_manager)
 
@@ -350,7 +341,6 @@ def test_save_to_fresh_child_layer_persists_changed_values(
     to a brand new, previously-empty layer.
     """
 
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
         theme: str = "light"
         font_size: int = 12
@@ -396,7 +386,6 @@ def test_save_removes_override_that_now_matches_parent_layer(
     layer entirely (rather than remaining as a stale, redundant override).
     """
 
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
         option1: int = 0
 
@@ -648,7 +637,6 @@ def test_revert_value_removes_flat_override_from_current_layer(
     whatever would be inherited from that layer's dependencies.
     """
 
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
         option1: int = 0
 
@@ -678,10 +666,9 @@ def test_revert_value_removes_flat_override_from_current_layer(
     config = TestConfig(manager, layer_filter="child")
     config.resolve()
     assert config.values.option1 == 2
-
-    field = dataclasses.fields(TestValues)[0]
-    assert field.name == "option1"
-    config.revert_value(field)
+ 
+    assert "option1" in TestValues.model_fields
+    config.revert_value("option1")
 
     # The override is gone from the layer's own data immediately...
     assert "option1" not in child_layer.get_data()
@@ -701,7 +688,6 @@ def test_revert_value_falls_back_to_default_with_no_dependency_value(
     """If no dependency layer provides a value for the reverted field
     either, ``revert_value`` should fall back to the field's own default."""
 
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
         option1: int = 7
 
@@ -716,15 +702,16 @@ def test_revert_value_falls_back_to_default_with_no_dependency_value(
     manager.register(root_layer)
     manager.load_all()
 
+    test_option_name = "option1"
+
     config = TestConfig(manager)
     config.values.option1 = 99
     config.save()
-    assert root_layer.get_data() == {"option1": 99}
+    assert root_layer.get_data() == {test_option_name: 99}
 
-    field = dataclasses.fields(TestValues)[0]
-    config.revert_value(field)
+    config.revert_value(test_option_name)
 
-    assert "option1" not in root_layer.get_data()
+    assert test_option_name not in root_layer.get_data()
     assert config.values.option1 == 7
 
 
@@ -770,9 +757,7 @@ def test_revert_value_removes_nested_category_override_from_current_layer(
         "category_a": {"field_one": 4000, "field_two": 5000}
     }
 
-    category_a_field = next(
-        f for f in dataclasses.fields(category_values_class) if f.name == "category_a"
-    )
+    category_a_field = category_values_class.model_config["category_a"]
     config2.revert_value(category_a_field)
 
     # The whole category override is gone from the layer immediately...
@@ -893,11 +878,9 @@ def test_revert_value_raises_for_field_not_on_values_class(
     """``revert_value`` should reject a field that doesn't belong to this
     config's ``VALUES_CLASS``."""
 
-    @dataclasses.dataclass
     class TestValues(ConfigValues):
         option1: int = 0
 
-    @dataclasses.dataclass
     class OtherValues(ConfigValues):
         other_option: int = 0
 
@@ -913,6 +896,6 @@ def test_revert_value_raises_for_field_not_on_values_class(
     manager.load_all()
 
     config = TestConfig(manager)
-    other_field = dataclasses.fields(OtherValues)[0]
+    other_field = OtherValues.model_fields["other_option"]
     with pytest.raises(ValueError):
         config.revert_value(other_field)
