@@ -1,4 +1,3 @@
-import dataclasses
 import logging
 import typing
 
@@ -16,7 +15,6 @@ class LayeredConfig[ValuesTypeVar]:
     Provides a way to access and update config values from multiple layers.
 
     Usage::
-        @dataclasses.dataclass
         class ExampleValues(ConfigValues):
             int_value: int = 0
             str_value: str = ""
@@ -28,7 +26,7 @@ class LayeredConfig[ValuesTypeVar]:
             VALUES_CLASS = ExampleValues
     """
 
-    VALUES_CLASS: type[ValuesTypeVar] = ConfigValues
+    VALUES_CLASS: type[ValuesTypeVar] = ValuesTypeVar
 
     def __init__(
         self,
@@ -84,7 +82,7 @@ class LayeredConfig[ValuesTypeVar]:
         return self._layer_manager.root_layers
 
     @property
-    def current_layer(self) -> str:
+    def current_layer(self) -> str | None:
         """Return the current layer filter.
 
         Returns:
@@ -184,7 +182,7 @@ class LayeredConfig[ValuesTypeVar]:
         diff = layer_helpers.deep_diff_dicts(current_dict, baseline)
         layer.replace_data(diff)
 
-    def revert_value(self, field_or_path: dataclasses.Field | str) -> None:
+    def revert_value(self, field_path: str) -> None:
         """Revert a field's value to what is inherited from the current
         layer's dependencies, discarding any override for it on that layer.
 
@@ -196,32 +194,33 @@ class LayeredConfig[ValuesTypeVar]:
         change to disk.
 
         Args:
-            field_or_path: Either a ``dataclasses.Field`` belonging to this
-                config's ``VALUES_CLASS`` (reverts that whole top-level
-                field -- for a category field, this discards *all* of its
-                nested overrides), or a dot-separated path string
-                addressing a single, possibly nested, leaf field by its
-                category/attribute keys, e.g. ``"category_a.field_one"``.
-                A nested path only discards the override for that one leaf
-                field, leaving sibling overrides within the same category
-                untouched -- e.g.::
+            field_path: Either the attribute name of a top-level field
+                belonging to this config's ``VALUES_CLASS`` (reverts that
+                whole field -- for a nested/category field, this discards
+                *all* of its nested overrides), or a dot-separated path
+                string addressing a single, possibly nested, leaf field by
+                its category/attribute keys, e.g.
+                ``"category_a.field_one"``. A nested path only discards the
+                override for that one leaf field, leaving sibling overrides
+                within the same category untouched -- e.g.::
 
                     config.revert_value("subcategory.option1")
 
         Raises:
-            ValueError: If *field_or_path* is a ``dataclasses.Field`` that
-                does not belong to this config's ``VALUES_CLASS``.
+            ValueError: If *field_path* has no dot and does not name a
+                top-level field of this config's ``VALUES_CLASS``.
         """
-        if isinstance(field_or_path, str):
-            path: tuple[str, ...] = tuple(field_or_path.split("."))
+        if "." in field_path:
+            path: tuple[str, ...] = tuple(field_path.split("."))
         else:
-            field = field_or_path
-            if field.name not in self.VALUES_CLASS.get_fields_names():
+            field_name = field_path
+            if field_name not in self.VALUES_CLASS.get_fields_names():
                 raise ValueError(
-                    f"Field '{field.name}' is not a field of "
+                    f"Field '{field_name}' is not a field of "
                     f"{self.VALUES_CLASS.__name__}"
                 )
-            path = (self.VALUES_CLASS._field_key(field),)
+            field_info = self.VALUES_CLASS.model_fields[field_name]
+            path = (self.VALUES_CLASS._field_key(field_name, field_info),)
 
         layer = self.layer_manager[self.current_layer]
         layer.unset_path(path)
