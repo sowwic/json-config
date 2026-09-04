@@ -1,5 +1,8 @@
 json-config
 ===========
+v1.0.3
+------
+* Migrate ConfigValues from dataclasses to pydantic (#21)
 
 v1.0.2
 ------
