@@ -6,10 +6,6 @@ from pydantic import Field
 
 from json_config.api import ConfigValues
 
-# ---------------------------------------------------------------------------
-# category metadata support (single level of nesting)
-# ---------------------------------------------------------------------------
-
 
 def test_get_defaults_expands_category_fields_into_nested_dicts(
     category_values_class: type[ConfigValues],
@@ -83,9 +79,7 @@ def test_category_key_can_differ_from_field_name():
         value: int = 1
 
     class OuterValues(ConfigValues):
-        inner: InnerValues = Field(
-            default_factory=InnerValues, alias="renamed"
-        )
+        inner: InnerValues = Field(default_factory=InnerValues, alias="renamed")
 
     values = OuterValues()
     assert values.to_dict() == {"renamed": {"value": 1}}
@@ -102,16 +96,10 @@ def test_nested_config_values_without_category_raises_value_error():
     class InnerValues(ConfigValues):
         value: int = 1
 
-    class OuterValues(ConfigValues):
-        inner: InnerValues = Field(default_factory=InnerValues)
-
     with pytest.raises(ValueError, match="inner"):
-        OuterValues()
 
-
-# ---------------------------------------------------------------------------
-# multi-level (3+) category nesting
-# ---------------------------------------------------------------------------
+        class OuterValues(ConfigValues):
+            inner: InnerValues = Field(default_factory=InnerValues)
 
 
 def test_get_defaults_supports_three_levels_of_category_nesting(
@@ -163,11 +151,6 @@ def test_replace_updates_deeply_nested_category_and_preserves_siblings(
     # Unrelated top-level category and flat field are untouched.
     assert updated.category_b.label == "test"
     assert updated.flat_value == 10
-
-
-# ---------------------------------------------------------------------------
-# JSON round-tripping (to_dict()/replace() against actual files on disk)
-# ---------------------------------------------------------------------------
 
 
 def test_to_dict_json_round_trip_supports_three_levels_of_nesting(

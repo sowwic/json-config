@@ -49,9 +49,7 @@ def test_defaults_writing(
     class TestValues(ConfigValues):
         int_value: int = Field(default=0)
         str_value: str = Field(default="default")
-        list_value: list[str] = Field(
-            default_factory=lambda: ["a", "b", "c"]
-        )
+        list_value: list[str] = Field(default_factory=lambda: ["a", "b", "c"])
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
@@ -63,8 +61,7 @@ def test_defaults_writing(
     )
     extra_root_layer = ConfigLayer(
         "extra_root",
-        file_path=config_output_dir
-        / f"{request.node.name}_extra_root_config.json",
+        file_path=config_output_dir / f"{request.node.name}_extra_root_config.json",
     )
     extra_child_layer = ConfigLayer(
         "extra",
@@ -600,9 +597,7 @@ def test_save_prunes_three_level_nested_category_field_that_now_matches_parent(
     config2.values.category_a.sub_category.y = 84
     config2.save()
 
-    assert child_layer.get_data() == {
-        "category_a": {"sub_category": {"x": 42, "y": 84}}
-    }
+    assert child_layer.get_data() == {"category_a": {"sub_category": {"x": 42, "y": 84}}}
 
     # Revert only x back to the parent's value; y still diverges.
     manager.load_all()
@@ -613,9 +608,7 @@ def test_save_prunes_three_level_nested_category_field_that_now_matches_parent(
 
     # Only y remains as an override, nested three levels deep; x and the
     # rest of category_a were pruned entirely since they now match root.
-    assert child_layer.get_data() == {
-        "category_a": {"sub_category": {"y": 84}}
-    }
+    assert child_layer.get_data() == {"category_a": {"sub_category": {"y": 84}}}
     on_disk = json.loads(child_layer.file_path.read_text())
     assert on_disk == {"category_a": {"sub_category": {"y": 84}}}
 
@@ -666,7 +659,7 @@ def test_revert_value_removes_flat_override_from_current_layer(
     config = TestConfig(manager, layer_filter="child")
     config.resolve()
     assert config.values.option1 == 2
- 
+
     assert "option1" in TestValues.model_fields
     config.revert_value("option1")
 
@@ -757,8 +750,7 @@ def test_revert_value_removes_nested_category_override_from_current_layer(
         "category_a": {"field_one": 4000, "field_two": 5000}
     }
 
-    category_a_field = category_values_class.model_config["category_a"]
-    config2.revert_value(category_a_field)
+    config2.revert_value("category_a")
 
     # The whole category override is gone from the layer immediately...
     assert "category_a" not in child_layer.get_data()
@@ -859,9 +851,7 @@ def test_revert_value_with_dotted_path_supports_three_levels_of_nesting(
     config2.values.category_a.sub_category.y = 84
     config2.save()
 
-    assert child_layer.get_data() == {
-        "category_a": {"sub_category": {"x": 42, "y": 84}}
-    }
+    assert child_layer.get_data() == {"category_a": {"sub_category": {"x": 42, "y": 84}}}
 
     # Revert only x via its dotted path; y must stay overridden.
     config2.revert_value("category_a.sub_category.x")
@@ -896,6 +886,5 @@ def test_revert_value_raises_for_field_not_on_values_class(
     manager.load_all()
 
     config = TestConfig(manager)
-    other_field = OtherValues.model_fields["other_option"]
     with pytest.raises(ValueError):
-        config.revert_value(other_field)
+        config.revert_value("other_option")
