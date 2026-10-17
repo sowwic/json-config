@@ -175,3 +175,31 @@ def test_to_dict_json_round_trip_supports_three_levels_of_nesting(
     restored = nested_category_values_class().replace(loaded)
 
     assert restored.to_dict() == values.to_dict()
+
+
+def test_serialization_hooks_can_prune_values():
+    """Test that pre/post serialize and deserialize hooks run on to_dict()/replace()."""
+
+    class RecentValues(ConfigValues):
+        recent_files: list[str] = Field(default_factory=list)
+
+        def pre_serialize(self) -> None:
+            self.recent_files = [f for f in self.recent_files if f != "missing"]
+
+        def post_serialize(self, data):
+            data["tag"] = "out"
+            return data
+
+        def pre_deserialize(self, data):
+            data = dict(data)
+            data["recent_files"] = [f for f in data["recent_files"] if f != "missing"]
+            return data
+
+        def post_deserialize(self):
+            return self.model_copy(update={"recent_files": self.recent_files + ["done"]})
+
+    values = RecentValues(recent_files=["a", "missing"])
+    assert values.to_dict() == {"recent_files": ["a"], "tag": "out"}
+
+    updated = RecentValues().replace({"recent_files": ["b", "missing"]})
+    assert updated.recent_files == ["b", "done"]
