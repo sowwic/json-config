@@ -127,22 +127,70 @@ class ConfigValues(BaseModel):
                         "ConfigValues but is missing Field(alias=...)"
                     )
 
+    def pre_serialize(self) -> None:
+        """Hook called at the start of `to_dict()`, before values are read.
+
+        Subclasses may override this to modify the instance in place, e.g.
+        drop stale entries from a field. Runs for every nested
+        `ConfigValues` as well, each on its own instance.
+        """
+
+    def post_serialize(self, data: dict[str, typing.Any]) -> dict[str, typing.Any]:
+        """Hook called at the end of `to_dict()` with the built dict.
+
+        Args:
+            data: The serialized dict for this instance (nested values are
+                already serialized).
+
+        Returns:
+            dict[str, Any]: The dict to return from `to_dict()`.
+        """
+        return data
+
+    def pre_deserialize(self, data: dict[str, typing.Any]) -> dict[str, typing.Any]:
+        """Hook called at the start of `replace()`, before *data* is applied.
+
+        Subclasses may override this to clean or migrate incoming data, e.g.
+        filter out non-existing paths. Keys are alias/field keys, as in
+        `to_dict()`.
+
+        Args:
+            data: The raw dict passed to `replace()`.
+
+        Returns:
+            dict[str, Any]: The dict that will actually be applied.
+        """
+        return data
+
+    def post_deserialize(self) -> typing.Self:
+        """Hook called at the end of `replace()` on the updated instance.
+
+        Returns:
+            ConfigValues: The instance to return from `replace()`. Defaults
+                to `self`.
+        """
+        return self
+
     def to_dict(self) -> dict[str, typing.Any]:
         """Convert this instance to a plain (possibly nested) dict.
 
         Fields with an alias set are nested under their alias name instead
         of their raw attribute name.
 
+        Calls `pre_serialize()` first and passes the result through
+        `post_serialize()` before returning.
+
         Returns:
             dict[str, Any]: dictionary of keys to their current values
         """
+        self.pre_serialize()
         result = {}
         for name, field in type(self).model_fields.items():
             value = getattr(self, name)
             if isinstance(value, ConfigValues):
                 value = value.to_dict()
             result[self._field_key(name, field)] = value
-        return result
+        return self.post_serialize(result)
 
     def replace(self, data: dict[str, typing.Any]) -> typing.Self:
         """Update config values from a (possibly nested) dictionary.
@@ -151,12 +199,16 @@ class ConfigValues(BaseModel):
         attribute name otherwise. Nested `ConfigValues` fields are updated
         recursively, so nested values absent from *data* are left untouched.
 
+        *data* is passed through `pre_deserialize()` first, and the updated
+        instance through `post_deserialize()` before being returned.
+
         Args:
             data (dict[str, Any]): dictionary of values to update
 
         Returns:
             ConfigValues: a new instance with updated values
         """
+        data = self.pre_deserialize(data)
         updates: dict[str, typing.Any] = {}
         for name, field in type(self).model_fields.items():
             key = self._field_key(name, field)
@@ -169,4 +221,4 @@ class ConfigValues(BaseModel):
                 value = current.replace(value)
             updates[name] = value
 
-        return self.model_copy(update=updates)
+        return self.model_copy(update=updates).post_deserialize()
