@@ -191,7 +191,7 @@ def config_layer_output_dir() -> pathlib.Path:
 
 @pytest.fixture()
 def preset_app_manager() -> ConfigLayerManager:
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     main_layer = ConfigLayer("main", file_path=MAIN_CONFIG_FIXTURE)
     workspace_layer = ConfigLayer(
         "workspace", file_path=WORKSPACE_CONFIG_FIXTURE, depends_on=["main"]
@@ -209,7 +209,7 @@ def preset_app_manager() -> ConfigLayerManager:
 
 @pytest.fixture()
 def preset_user_manager() -> ConfigLayerManager:
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     default_layer = ConfigLayer("default", file_path=USER_DEFAULT_FIXTURE)
     user1_layer = ConfigLayer("user1", file_path=USER1_FIXTURE, depends_on=["default"])
     user2_layer = ConfigLayer("user2", file_path=USER2_FIXTURE, depends_on=["default"])

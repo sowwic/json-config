@@ -22,8 +22,9 @@ def test_init_with_single_layer(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer("root", file_path=simple_config_file)
     manager.register(root_layer)
     manager.load_all()
@@ -53,9 +54,10 @@ def test_defaults_writing(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
     # Setup manager
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
@@ -95,6 +97,7 @@ def test_layer_filter_limits_resolve_to_expected_values(
 
     class TestConfig(LayeredConfig[ConfigValues]):
         VALUES_CLASS = ConfigValues
+        NAME = "test"
 
     config = TestConfig(preset_app_manager)
 
@@ -125,6 +128,7 @@ def test_invalid_layer_filter_resolve(
 
     class TestConfig(LayeredConfig[ConfigValues]):
         VALUES_CLASS = ConfigValues
+        NAME = "test"
 
     config = TestConfig(preset_app_manager)
 
@@ -141,6 +145,7 @@ def test_default_values():
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
     config = TestConfig()
     assert config.defaults() == TestValues()
@@ -154,6 +159,7 @@ def test_reset_values():
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
     config = TestConfig()
     config.values.name = "new_value"
@@ -177,8 +183,9 @@ def test_layered_config_save_produces_expected_nested_json(
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
@@ -205,8 +212,9 @@ def test_layered_config_roundtrip_mutating_nested_category_value(
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
@@ -246,13 +254,14 @@ def test_layered_config_deep_merges_nested_category_across_layers(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
     config = TestConfig(manager)
     #! Seed root defaults without resolving, matching test_defaults_writing.
@@ -283,8 +292,9 @@ def test_layered_config_roundtrip_with_three_levels_of_nesting(
 
     class TestConfig(LayeredConfig[nested_category_values_class]):
         VALUES_CLASS = nested_category_values_class
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root", file_path=config_output_dir / f"{request.node.name}_config.json"
     )
@@ -344,8 +354,9 @@ def test_save_to_fresh_child_layer_persists_changed_values(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root", file_path=config_output_dir / f"{request.node.name}_root.json"
     )
@@ -388,8 +399,9 @@ def test_save_removes_override_that_now_matches_parent_layer(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root",
         file_path=config_output_dir / f"{request.node.name}_root.json",
@@ -451,13 +463,14 @@ def test_save_removes_nested_category_override_that_now_matches_parent(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
     # Seed root defaults: category_a.field_one=100, field_two=100.
     config = TestConfig(manager)
@@ -513,13 +526,14 @@ def test_save_prunes_nested_category_field_that_now_matches_parent(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
     # Seed root defaults: category_a.field_one=100, field_two=100.
     config = TestConfig(manager)
@@ -576,13 +590,14 @@ def test_save_prunes_three_level_nested_category_field_that_now_matches_parent(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[nested_category_values_class]):
         VALUES_CLASS = nested_category_values_class
+        NAME = "test"
 
     # Seed root defaults: category_a.{field_one,field_two}=100,
     # category_a.sub_category.{x,y}=0.
@@ -635,8 +650,9 @@ def test_revert_value_removes_flat_override_from_current_layer(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root",
         file_path=config_output_dir / f"{request.node.name}_root.json",
@@ -686,8 +702,9 @@ def test_revert_value_falls_back_to_default_with_no_dependency_value(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root",
         file_path=config_output_dir / f"{request.node.name}_root.json",
@@ -726,13 +743,14 @@ def test_revert_value_removes_nested_category_override_from_current_layer(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
     # Seed root defaults: category_a.field_one=100, field_two=100.
     config = TestConfig(manager)
@@ -779,13 +797,14 @@ def test_revert_value_with_dotted_path_only_reverts_leaf_field(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[category_values_class]):
         VALUES_CLASS = category_values_class
+        NAME = "test"
 
     # Seed root defaults: category_a.field_one=100, field_two=100.
     config = TestConfig(manager)
@@ -831,13 +850,14 @@ def test_revert_value_with_dotted_path_supports_three_levels_of_nesting(
         file_path=config_output_dir / f"{request.node.name}_child.json",
         depends_on=["root"],
     )
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     manager.register(root_layer)
     manager.register(child_layer)
     manager.load_all()
 
     class TestConfig(LayeredConfig[nested_category_values_class]):
         VALUES_CLASS = nested_category_values_class
+        NAME = "test"
 
     # Seed root defaults: category_a.sub_category.{x,y}=0.
     config = TestConfig(manager)
@@ -876,8 +896,9 @@ def test_revert_value_raises_for_field_not_on_values_class(
 
     class TestConfig(LayeredConfig[TestValues]):
         VALUES_CLASS = TestValues
+        NAME = "test"
 
-    manager = ConfigLayerManager()
+    manager = ConfigLayerManager("test")
     root_layer = ConfigLayer(
         "root",
         file_path=config_output_dir / f"{request.node.name}_root.json",
@@ -888,3 +909,19 @@ def test_revert_value_raises_for_field_not_on_values_class(
     config = TestConfig(manager)
     with pytest.raises(ValueError):
         config.revert_value("other_option")
+
+
+def test_missing_name_raises():
+    class TestConfig(LayeredConfig[ConfigValues]):
+        VALUES_CLASS = ConfigValues
+
+    with pytest.raises(NotImplementedError):
+        TestConfig()
+
+
+def test_get_manager_creates_and_reuses():
+    from json_config.core.layer_manager import get_layer_manager
+
+    first = get_layer_manager("a")
+    assert get_layer_manager("a") is first
+    assert get_layer_manager("b") is not first

@@ -9,18 +9,26 @@ from .config_layer import ConfigLayer
 LOGGER = logging.getLogger(__name__)
 
 
+def get_layer_manager(name: str) -> "ConfigLayerManager":
+    """Return the manager registered under *name*, creating it if needed."""
+    return ConfigLayerManager(name)
+
+
 class _ManagerMeta(type):
-    """Singleton metaclass for ConfigLayerManager."""
+    """Named-singleton metaclass for ConfigLayerManager.
 
-    _instance: "ConfigLayerManager | None" = None
+    Holds one instance per name.
+    """
 
-    def __call__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__call__(*args, **kwargs)
-        return cls._instance
+    _instances: "dict[str, ConfigLayerManager]" = {}
 
-    def clear_instance(cls) -> None:
-        cls._instance = None
+    def __call__(cls, name: str, *args, **kwargs):
+        if name not in cls._instances:
+            cls._instances[name] = super().__call__(name, *args, **kwargs)
+        return cls._instances[name]
+
+    def clear_instances(cls) -> None:
+        cls._instances.clear()
 
 
 class ConfigLayerManager(metaclass=_ManagerMeta):
@@ -28,7 +36,7 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
 
     Usage::
 
-        manager = ConfigLayerManager()
+        manager = ConfigLayerManager("example")
 
         # Register layers (order of registration does NOT matter;
         # depends_on drives the merge order).
@@ -50,12 +58,26 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
         manager.save("user")
     """
 
-    def __init__(self) -> None:
+    def __init__(self, name: str) -> None:
+        self._name = name
         self._layers: dict[str, ConfigLayer] = {}
 
     def __repr__(self) -> str:
         layers = self.sorted_names()
         return f"{self.__class__.__name__}(layers={layers})"
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def root_layers(self) -> list[str]:
+        """Return the root layers as a dict.
+
+        Returns:
+            list[str]: The root layer names.
+        """
+        return [k for k, v in self._layers.items() if not v.depends_on]
 
     def register(self, layer: ConfigLayer) -> None:
         """Add a layer to the manager."""
@@ -155,15 +177,6 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
     # Ordering
     # ------------------------------------------------------------------
 
-    @property
-    def root_layers(self) -> list[str]:
-        """Return the root layers as a dict.
-
-        Returns:
-            list[str]: The root layer names.
-        """
-        return [k for k, v in self._layers.items() if not v.depends_on]
-
     def sorted_names(self, up_to: str | None = None) -> list[str]:
         """Return layer names in topological order.
 
@@ -262,5 +275,5 @@ class ConfigLayerManager(metaclass=_ManagerMeta):
 
     @classmethod
     def clear(cls) -> None:
-        """Destroy the singleton (useful in tests)."""
-        cls.clear_instance()  # type: ignore[attr-defined]
+        """Destroy all named managers (useful in tests)."""
+        cls.clear_instances()  # type: ignore[attr-defined]
