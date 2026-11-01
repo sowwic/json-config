@@ -1,5 +1,9 @@
 json-config
 ===========
+v1.0.5
+------
+* Add multi insance support for `ConfigLayerManager` (#27)
+
 v1.0.4
 ------
 * Add pre/post hooks for serialisation/deserialisation of `ConfigValues` (#24)
