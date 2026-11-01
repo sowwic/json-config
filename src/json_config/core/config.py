@@ -3,7 +3,7 @@ import typing
 
 from ..utils import layer_helpers
 from .config_values import ConfigValues
-from .layer_manager import ConfigLayerManager
+from .layer_manager import ConfigLayerManager, get_layer_manager
 
 LOGGER = logging.getLogger(__name__)
 ValuesTypeVar = typing.TypeVar("ValuesTypeVar", bound="ConfigValues")
@@ -24,9 +24,11 @@ class LayeredConfig[ValuesTypeVar]:
 
         class ExampleConfig(LayeredConfig[ExampleValues]):
             VALUES_CLASS = ExampleValues
+            NAME = "example"
     """
 
     VALUES_CLASS: type[ValuesTypeVar] = ValuesTypeVar
+    NAME: str | None = None
 
     def __init__(
         self,
@@ -37,13 +39,21 @@ class LayeredConfig[ValuesTypeVar]:
 
         Args:
             layer_manager (ConfigLayerManager | None, optional): The config manager
-                to use, by default None (a new manager is created).
+                to use, by default None (the manager named ``NAME`` is
+                retrieved or created).
             layer_filter (str | None, optional): The layer filter to use,
                 by default None (the root layer is used).
+
+        Raises:
+            NotImplementedError: If no layer manager is given and ``NAME``
+                is not defined by the subclass.
         """
-        self._layer_manager: ConfigLayerManager = (
-            layer_manager if layer_manager else ConfigLayerManager()
-        )
+        if self.NAME is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must define the NAME class variable"
+            )
+
+        self._layer_manager = layer_manager or get_layer_manager(self.NAME)
         self._layer_filter: str | None = layer_filter
         self._values: ValuesTypeVar = self.VALUES_CLASS()
 
