@@ -203,3 +203,18 @@ def test_serialization_hooks_can_prune_values():
 
     updated = RecentValues().replace({"recent_files": ["b", "missing"]})
     assert updated.recent_files == ["b", "done"]
+
+
+def test_get_field_bounds_returns_declared_limits():
+    """Test that get_field_bounds() reads ge/le constraints and None when unbounded."""
+
+    class Bounded(ConfigValues):
+        width: int = Field(default=10, ge=1, le=100)
+        ratio: float = Field(default=0.5, gt=0.0)
+        label: str = "x"
+
+    assert Bounded.get_field_bounds("width") == (1, 100)
+    assert Bounded.get_field_bounds("ratio") == (0.0, None)
+    assert Bounded.get_field_bounds("label") == (None, None)
+    with pytest.raises(KeyError):
+        Bounded.get_field_bounds("missing")

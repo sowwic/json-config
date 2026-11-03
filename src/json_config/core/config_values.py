@@ -67,6 +67,36 @@ class ConfigValues(BaseModel):
         """
         return set(cls.model_fields.keys())
 
+    @classmethod
+    def get_field_bounds(
+        cls, name: str
+    ) -> tuple[int | float | None, int | float | None]:
+        """Get the numeric bounds declared for a field.
+
+        Reads the `ge`/`gt` and `le`/`lt` constraints given via
+        `Field(...)` or `Annotated[...]`. Exclusive bounds (`gt`/`lt`) are
+        returned as their raw constraint value.
+
+        Args:
+            name: The field's attribute name.
+
+        Returns:
+            tuple: `(minimum, maximum)`; a side is `None` if unbounded.
+
+        Raises:
+            KeyError: If no field called *name* exists.
+        """
+        field = cls.model_fields[name]
+        minimum = maximum = None
+        for constraint in field.metadata:
+            for attr in ("ge", "gt"):
+                if getattr(constraint, attr, None) is not None:
+                    minimum = getattr(constraint, attr)
+            for attr in ("le", "lt"):
+                if getattr(constraint, attr, None) is not None:
+                    maximum = getattr(constraint, attr)
+        return minimum, maximum
+
     @staticmethod
     def _field_key(name: str, field: typing.Any) -> str:
         """Return the key a field should be addressed by.
