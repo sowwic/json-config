@@ -1,6 +1,12 @@
 name: Run tests
 description: Install system libraries, the project, and run pytest.
 
+inputs:
+  python-version:
+    description: Python version to test against (defaults to the one in pyproject.toml).
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -18,7 +24,8 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version-file: "pyproject.toml"
+        python-version: ${{ inputs.python-version }}
+        python-version-file: ${{ inputs.python-version == '' && 'pyproject.toml' || '' }}
 
     - name: Install the project
       shell: bash
