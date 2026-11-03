@@ -1,8 +1,15 @@
 json-config
 ===========
+v1.0.6
+------
+* Add `make release` target
+* Switch to using shared workflows from sowwic/gh-workflows
+* Add method for querying value bounds by name
+* Fix issue with 3.12 annotations, add 3.12 to test matrix (#35)
+
 v1.0.5
 ------
-* Add multi insance support for `ConfigLayerManager` (#27)
+* Add multi instance support for `ConfigLayerManager` (#27)
 
 v1.0.4
 ------

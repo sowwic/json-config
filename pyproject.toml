@@ -1,6 +1,6 @@
 [project]
 name = "json-config"
-version = "1.0.5"
+version = "1.0.6"
 description = "Description"
 authors = [
     {name = "Dima Shevchenko",email = "47799401+sowwic@users.noreply.github.com"}
