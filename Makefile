@@ -5,6 +5,9 @@ DIST_DIR = dist
 BUILD_DIR = build
 MKDOCS_SITE_DIR = site
 TEST_OUTPUT_DIR = .test_output
+RELEASE_BRANCH ?= main
+DEVELOP_BRANCH ?= develop
+GH_WORKFLOWS_REF ?= v1
 
 
 # Colors
@@ -88,3 +91,9 @@ build: ## Build the application using uv
 	@uv build
 
 
+.PHONY: release
+release: ## Tag, push and back-merge a release: make release VERSION=x.y.z [RELEASE_TITLE=...]
+	$(if $(VERSION),,$(error VERSION is required, e.g. make release VERSION=1.2.3))
+	$(call banner, Releasing $(APP_NAME) v$(VERSION)...)
+	@curl -fsSL https://raw.githubusercontent.com/sowwic/gh-workflows/$(GH_WORKFLOWS_REF)/scripts/release.py | \
+		python3 - $(VERSION) --release-branch $(RELEASE_BRANCH) --develop-branch $(DEVELOP_BRANCH) $(if $(RELEASE_TITLE),--title "$(RELEASE_TITLE)")

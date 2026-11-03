@@ -4,39 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
 jobs:
-  # Cheap platforms first, in parallel. A failure here cancels the sibling job
-  # and skips the (10x more expensive) macOS job.
-  unit-tests:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.12", "3.13", "3.14"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: ./.github/actions/run-tests
-        with:
-          python-version: ${{ matrix.python-version }}
-
-  # macOS minutes are billed at 10x: only run once Linux and Windows pass, and
-  # skip draft pull requests.
-  unit-tests-macos:
-    needs: unit-tests
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    runs-on: macos-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ["3.12", "3.14"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: ./.github/actions/run-tests
-        with:
-          python-version: ${{ matrix.python-version }}
+  tests:
+    uses: sowwic/gh-workflows/.github/workflows/python-tests.yml@v1
+    with:
+      apt-packages: libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 libglib2.0-0
