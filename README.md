@@ -93,7 +93,7 @@ manager.register(ConfigLayer("defaults", file_path=defaults_path))
 manager.register(ConfigLayer("project", depends_on=["defaults"], file_path=project_path))
 manager.register(ConfigLayer("user", depends_on=["project"], file_path=user_path))
 
-config = AppConfig()
+config = AppConfig(layer_filter="user")
 config.resolve()
 config.values.theme       # "dark"  (user)
 config.values.font_size   # 14      (project)

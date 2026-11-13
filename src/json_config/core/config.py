@@ -182,8 +182,7 @@ class LayeredConfig[ValuesTypeVar]:
         and fields that now match the baseline (at any depth) are dropped.
 
         Args:
-            layer_name : str
-                The name of the layer to write to.
+            layer_name: The name of the layer to write to.
         """
 
         layer = self.layer_manager[layer_name]

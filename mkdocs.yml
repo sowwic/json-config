@@ -4,6 +4,10 @@ site_author: Dima Shevchenko
 theme:
   name: material
 
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+
 plugins:
   - search
   - mkdocs-autoapi:
@@ -18,7 +22,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: ["src/json_config"]
+          paths: ["src"]
           options:
             docstring_style: google
             show_signature: true
@@ -32,5 +36,17 @@ plugins:
   - autorefs
 
 nav:
-  - User Guide: user/index.md
-  - Developer Guide: dev/index.md
+  - Home: index.md
+  - User Guide:
+      - user/index.md
+      - Getting started: user/getting-started.md
+      - Defining values: user/values.md
+      - Layers: user/layers.md
+      - Saving and reverting: user/saving.md
+      - Recipes: user/recipes.md
+  - Developer Guide:
+      - dev/index.md
+      - Architecture: dev/architecture.md
+      - Resolution and saving: dev/resolution.md
+      - Testing: dev/testing.md
+      - Releasing: dev/releasing.md
