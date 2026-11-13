@@ -5,7 +5,7 @@ BUILD_PREREQS = clean-ds-store
 
 MAKEFILES_REF ?= v1
 MAKEFILES_URL ?= https://raw.githubusercontent.com/sowwic/makefiles/$(MAKEFILES_REF)
-MAKEFILES_MODULES = general/python general/pypi
+MAKEFILES_MODULES = general/python general/repo general/pypi
 
 .make/%.mk:
 	@mkdir -p $(dir $@)
