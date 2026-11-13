@@ -1,7 +1,7 @@
 [project]
-name = "json-config"
+name = "sowwic-json-config"
 version = "1.0.6"
-description = "Description"
+description = "Layered JSON configuration with typed pydantic values: stack JSON files, edit one layer, save only the overrides."
 authors = [
     {name = "Dima Shevchenko",email = "47799401+sowwic@users.noreply.github.com"}
 ]
@@ -15,6 +15,9 @@ dependencies = [
     "pydantic>=2.13.5",
 ]
 
+
+[tool.uv.build-backend]
+module-name = "json_config"
 
 [build-system]
 requires = ["uv_build>=0.10.6"]
