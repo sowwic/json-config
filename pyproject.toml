@@ -1,6 +1,6 @@
 [project]
 name = "sowwic-json-config"
-version = "1.0.6"
+version = "1.0.7"
 description = "Layered JSON configuration with typed pydantic values: stack JSON files, edit one layer, save only the overrides."
 authors = [
     {name = "Dima Shevchenko",email = "47799401+sowwic@users.noreply.github.com"}
