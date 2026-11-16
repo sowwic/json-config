@@ -14,11 +14,12 @@ class LayeredConfig[ValuesTypeVar]:
 
     Provides a way to access and update config values from multiple layers.
 
-    Usage::
+    Example:
+        ```python
         class ExampleValues(ConfigValues):
             int_value: int = 0
             str_value: str = ""
-            list_value: list[str] = dataclasses.field(
+            list_value: list[str] = Field(
                 default_factory=list,
             )
 
@@ -127,9 +128,8 @@ class LayeredConfig[ValuesTypeVar]:
     def values(self) -> ValuesTypeVar:
         """Return the current values object.
 
-        Returns
-        -------
-        T: The current values object.
+        Returns:
+            T: The current values object.
         """
         return self._values
 
@@ -182,8 +182,7 @@ class LayeredConfig[ValuesTypeVar]:
         and fields that now match the baseline (at any depth) are dropped.
 
         Args:
-            layer_name : str
-                The name of the layer to write to.
+            layer_name: The name of the layer to write to.
         """
 
         layer = self.layer_manager[layer_name]
@@ -197,10 +196,10 @@ class LayeredConfig[ValuesTypeVar]:
         layer's dependencies, discarding any override for it on that layer.
 
         This immediately removes the field's own override from the current
-        layer's raw data, and updates :attr:`values` to reflect the value
+        layer's raw data, and updates `values` to reflect the value
         that would be resolved without that layer's own contribution
         (falling back to the field's default if no dependency provides a
-        value for it either). Call :meth:`save` afterwards to persist the
+        value for it either). Call `save` afterwards to persist the
         change to disk.
 
         Args:
@@ -237,11 +236,10 @@ class LayeredConfig[ValuesTypeVar]:
 
         baseline = self.layer_manager.resolve_many(*layer.depends_on)
         defaults = self.VALUES_CLASS.get_defaults()
-        _unset = object()
-        value = layer_helpers.get_nested(baseline, path, _unset)
-        if value is _unset:
-            value = layer_helpers.get_nested(defaults, path, _unset)
-        if value is not _unset:
+        value = layer_helpers.get_nested(baseline, path)
+        if value is layer_helpers.UNSET_DICT_VALUE:
+            value = layer_helpers.get_nested(defaults, path)
+        if value is not layer_helpers.UNSET_DICT_VALUE:
             self._values = self._values.replace(layer_helpers.nest_value(path, value))
 
     def reset(self):
