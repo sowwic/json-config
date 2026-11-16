@@ -7,7 +7,8 @@ from graphlib import TopologicalSorter
 if typing.TYPE_CHECKING:
     from ..api import ConfigLayer
 
-_UNSET = object()
+
+UNSET_DICT_VALUE = object()
 
 
 def deep_merge_dicts(base: dict, override: dict) -> dict:
@@ -15,6 +16,13 @@ def deep_merge_dicts(base: dict, override: dict) -> dict:
 
     - Nested dicts are merged recursively.
     - All other types (including lists) are replaced by the override value.
+
+    Args:
+        base (dict): The base dictionary to merge into.
+        override (dict): The dictionary to merge from.
+
+    Returns:
+        dict: The merged dictionary.
     """
     result = dict(base)
     for key, value in override.items():
@@ -38,28 +46,27 @@ def deep_diff_dicts(current: dict, baseline: dict) -> dict:
     including within nested category values.
 
     Args:
-        current: The full, resolved values to diff.
-        baseline: The values that would already be inherited without
+        current (dict): The full, resolved values to diff.
+        baseline (dict): The values that would already be inherited without
             *current*'s own contribution.
 
     Returns:
         dict: A (possibly nested) dict containing only the differing values.
     """
-    _unset = object()
     result = {}
     for key, value in current.items():
-        base_value = baseline.get(key, _unset)
+        base_value = baseline.get(key, UNSET_DICT_VALUE)
         if isinstance(value, dict) and isinstance(base_value, dict):
             nested_diff = deep_diff_dicts(value, base_value)
             if nested_diff:
                 result[key] = nested_diff
-        elif base_value is _unset or base_value != value:
+        elif base_value is UNSET_DICT_VALUE or base_value != value:
             result[key] = value
     return result
 
 
 def get_nested(
-    data: dict, path: Sequence[str], default: typing.Any = None
+    data: dict, path: Sequence[str], default: typing.Any = UNSET_DICT_VALUE
 ) -> typing.Any:
     """Look up a (possibly nested) value in *data* by *path*.
 
@@ -68,6 +75,7 @@ def get_nested(
         path: Sequence of keys addressing the value, e.g. ``("category_a",
             "field_one")`` to look up ``data["category_a"]["field_one"]``.
         default: Value to return if *path* is not fully present in *data*.
+            Defaults to ``UNSET_DICT_VALUE``.
 
     Returns:
         Any: The value found at *path*, or *default*.
@@ -87,8 +95,8 @@ def pop_nested(data: dict, path: Sequence[str]) -> None:
     itself removed, so this never leaves behind stale, empty containers.
 
     Args:
-        data: The dict to remove the value from.
-        path: Sequence of keys addressing the value to remove.
+        data (dict): The dict to remove the value from.
+        path (Sequence[str]): Sequence of keys addressing the value to remove.
     """
     if not path:
         return
@@ -111,14 +119,14 @@ def pop_nested(data: dict, path: Sequence[str]) -> None:
 def nest_value(path: Sequence[str], value: typing.Any) -> dict:
     """Wrap *value* in nested dicts following *path*.
 
-    Example::
-
+    Example:
+        ```python
         nest_value(("category_a", "field_one"), 42)
         # -> {"category_a": {"field_one": 42}}
 
     Args:
-        path: Sequence of keys to nest the value under.
-        value: The value to wrap.
+        path (Sequence[str]): Sequence of keys to nest the value under.
+        value (typing.Any): The value to wrap.
 
     Returns:
         dict: The nested dict wrapping *value*.
@@ -132,11 +140,17 @@ def nest_value(path: Sequence[str], value: typing.Any) -> dict:
 def topological_sort_layers(layers: dict[str, ConfigLayer]) -> list[str]:
     """Return layer names in dependency-resolved order (dependencies first).
 
-    Uses :class:`graphlib.TopologicalSorter` from the standard library.
+    Uses `graphlib.TopologicalSorter` from the standard library.
+
+    Args:
+        layers (dict[str, ConfigLayer]): The layers to sort.
 
     Raises:
         ValueError: if a dependency is missing or not registered.
         graphlib.CycleError: if a circular dependency is detected.
+
+    Returns:
+        list[str]: The sorted layer names.
     """
     for name, layer in layers.items():
         for dep in layer.depends_on:

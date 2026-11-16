@@ -1,5 +1,9 @@
 json-config
 ===========
+v1.0.7
+------
+* Add pypi make targets, python pin file and docs (#10)
+
 v1.0.6
 ------
 * Add `make release` target
